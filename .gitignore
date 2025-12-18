@@ -204,7 +204,7 @@ dkms.conf
 # https://github.com/espressif/esp-idf
 
 build/
-sdkconfig
+# sdkconfig
 sdkconfig.old
 
 ### JetBrains template
