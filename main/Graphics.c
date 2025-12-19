@@ -25,7 +25,6 @@
  *        framebuffer displays.
  */
 
-#include "private/Graphics.h"
 #include "public/Graphics.h"
 #include "public/Font5x7.h"
 #include "structure/tGraphics.h"
@@ -33,6 +32,37 @@
 #include <stdint.h>   // uint8_t
 #include <stddef.h>   // size_t
 #include <string.h>   // memset
+
+/**
+ * @brief Draws a single character on the graphics context at the specified position.
+ * @details This function uses the font defined in the graphics context to render
+ *          the character. It handles character mapping and pixel setting based
+ *          on the font glyph data.
+ *
+ * @param pGraphics Pointer to the graphics context.
+ * @param x The x-coordinate where the character will be drawn.
+ * @param y The y-coordinate where the character will be drawn.
+ * @param ch The character to be drawn.
+ */
+static void Graphics_DrawChar(const tGraphics *pGraphics, const int x, const int y, char ch) {
+    // Map unsupported characters to '?'
+    if(ch < FONT5X7_FIRST_ASCII || ch > FONT5X7_LAST_ASCII) {
+        ch = '?';
+    }
+
+    // Retrieve character columns from Font5x7 and draw pixels
+    const uint8_t *glyphCols = Font5x7[(int)ch - FONT5X7_FIRST_ASCII].mCols;
+
+    // For each of the 5 columns, set pixels for the 7 rows
+    for(int iCol = 0; iCol < FONT5X7_WIDTH; iCol++) {
+        const uint8_t colBits = glyphCols[iCol];
+
+        for(int iRow = 0; iRow < FONT5X7_HEIGHT; iRow++) {
+            const int set = (colBits >> iRow) & 1;  // LSB = top pixel
+            Graphics_SetPixel(pGraphics, x + iCol, y + iRow, (bool)set);
+        }
+    }
+}
 
 void Graphics_Init(tGraphics *pGraphics, const int width, const int height, uint8_t *pFrameBuffer) {
     // Initialize graphics context fields
@@ -227,25 +257,5 @@ void Graphics_DrawText(const tGraphics *pGraphics, const int x, int y, const cha
         cursorX += 6;
     }
 } // Graphics_DrawText()
-
-void Graphics_DrawChar(const tGraphics *pGraphics, const int x, const int y, char ch) {
-    // Map unsupported characters to '?'
-    if(ch < FONT5X7_FIRST_ASCII || ch > FONT5X7_LAST_ASCII) {
-        ch = '?';
-    }
-
-    // Retrieve character columns from Font5x7 and draw pixels
-    const uint8_t *glyphCols = Font5x7[(int)ch - FONT5X7_FIRST_ASCII].mCols;
-
-    // For each of the 5 columns, set pixels for the 7 rows
-    for(int iCol = 0; iCol < FONT5X7_WIDTH; iCol++) {
-        const uint8_t colBits = glyphCols[iCol];
-
-        for(int iRow = 0; iRow < FONT5X7_HEIGHT; iRow++) {
-            const int set = (colBits >> iRow) & 1;  // LSB = top pixel
-            Graphics_SetPixel(pGraphics, x + iCol, y + iRow, (bool)set);
-        }
-    }
-}
 
 /*** end of file Graphics.c ***/
