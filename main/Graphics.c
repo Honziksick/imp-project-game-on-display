@@ -62,7 +62,7 @@ static void Graphics_DrawChar(const tGraphics *pGraphics, const int x, const int
             Graphics_SetPixel(pGraphics, x + iCol, y + iRow, (bool)set);
         }
     }
-}
+} // Graphics_DrawChar()
 
 void Graphics_Init(tGraphics *pGraphics, const int width, const int height, uint8_t *pFrameBuffer) {
     // Initialize graphics context fields

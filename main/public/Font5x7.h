@@ -23,8 +23,8 @@
  * @brief Declaration of the 5x7 monospaced bitmap font definitions and constants.
  */
 
-#ifndef FONT5X7_PUBLIC_H
-#define FONT5X7_PUBLIC_H
+#ifndef FONT5X7_H
+#define FONT5X7_H
 
 #include "structure/tFontGlyph.h"
 
@@ -42,6 +42,6 @@
  */
 extern const tFontGlyph Font5x7[FONT5X7_COUNT];
 
-#endif // FONT5X7_PUBLIC_H
+#endif // FONT5X7_H
 
 /*** end of file Font5x7.h ***/

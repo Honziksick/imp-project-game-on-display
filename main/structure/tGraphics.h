@@ -37,7 +37,6 @@
  *          stored. The framebuffer uses a page-oriented format, with each byte
  *          representing 8 vertical pixels.
  */
-
 typedef struct {
     int mWidth;                /**< Width of the display in pixels.    */
     int mHeight;               /**< Height of the display in pixels.   */

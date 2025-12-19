@@ -11,16 +11,17 @@
  * Created:      15.12.2025                                                    *
  * Last edit:    18.12.2025                                                    *
  *                                                                             *
- * Description: Public implementation of the 5x7 bitmap font used by the       *
- *              graphics subsystem. Provides glyph definitions and font        *
- *              metrics constants for characters in the ASCII range 32-127.    *
- *              The font is organized as 5 columns x 7 rows per glyph.         *
+ * Description:  Public implementation of the 5x7 bitmap font used by the      *
+ *               graphics subsystem. Provides glyph definitions and font       *
+ *               metrics constants for characters in the ASCII range 32-127.   *
+ *               The font is organized as 5 columns x 7 rows per glyph.        *
  *                                                                             *
  ******************************************************************************/
 /**
  * @file Font5x7.c
  * @author Jan Kalina \<xkalinj00>
- * @brief Implementation of the 5x7 monospaced bitmap font definitions and constants.
+ * @brief Implementation of the 5x7 monospaced bitmap font definitions and
+ *        constants.
  */
 
 #include "public/Font5x7.h"

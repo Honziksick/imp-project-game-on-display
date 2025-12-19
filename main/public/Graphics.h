@@ -23,12 +23,15 @@
  * @brief Public interface for framebuffer-based graphics operations.
  */
 
-#ifndef GRAPHICS_PUBLIC_H
-#define GRAPHICS_PUBLIC_H
+#ifndef GRAPHICS_H
+#define GRAPHICS_H
 
 #include "structure/tGraphics.h"
+#include "public/SSD1306.h"
 #include <stdbool.h>  // bool
 #include <stdint.h>   // uint8_t
+
+#define FRAMEBUFFER_SIZE (SSD1306_WIDTH * (SSD1306_HEIGHT / 8))   /**< Framebuffer size (page-oriented). */
 
 /**
  * @brief Initializes a graphics context with the specified dimensions and framebuffer.
@@ -130,6 +133,6 @@ void Graphics_DrawCircle(const tGraphics *pGraphics, int centerX, int centerY, i
  */
 void Graphics_DrawText(const tGraphics *pGraphics, int x, int y, const char text[]);
 
-#endif // GRAPHICS_PUBLIC_H
+#endif // GRAPHICS_H
 
 /*** end of file Graphics.h ***/

@@ -39,10 +39,10 @@
  *          in pixels.
  */
 typedef struct {
-    i2c_port_t mI2CPort;  /**< I2C port number.                                     */
-    uint8_t mAddress;     /**< I2C address of the SSD1306 display (typically 0x3C). */
-    uint8_t mWidth;       /**< Width of the display in pixels (128).                */
-    uint8_t mHeight;      /**< Height of the display in pixels (32 or 64).          */
+    i2c_port_t mI2CPort;    /**< I2C port number.                                     */
+    uint8_t mAddress;       /**< I2C address of the SSD1306 display (typically 0x3C). */
+    uint8_t mWidth;         /**< Width of the display in pixels (128).                */
+    uint8_t mHeight;        /**< Height of the display in pixels (32 or 64).          */
 } tSSD1306;
 
 #endif // T_SSD1306_H

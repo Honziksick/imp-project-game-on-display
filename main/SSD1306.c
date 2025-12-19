@@ -66,8 +66,8 @@ static esp_err_t SSD1306_SendCommandList(const tSSD1306 *pDisplay, const uint8_t
     while(commandsCount > 0) {
         // Determine chunk size (max 32 commands per transmission)
         const size_t transferChunkSize = (commandsCount > SSD1306_MAX_COMMANDS_PER_TRANSFER)
-                                     ? SSD1306_MAX_COMMANDS_PER_TRANSFER
-                                     : commandsCount;
+                                             ? SSD1306_MAX_COMMANDS_PER_TRANSFER
+                                             : commandsCount;
 
         // Set control byte to indicate following bytes are commands (p20, section 8.1.5.2)
         transmitBuffer[0] = SSD1306_CONTROL_COMMAND;  // Co=0, D/C#=0 for command mode

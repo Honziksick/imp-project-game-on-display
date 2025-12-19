@@ -23,20 +23,24 @@
  * @brief Public API for SSD1306 OLED display driver over I2C.
  */
 
-#ifndef SSD1306_PUBLIC_H
-#define SSD1306_PUBLIC_H
+#ifndef SSD1306_H
+#define SSD1306_H
 
 #include "structure/tSSD1306.h"
 #include "driver/i2c.h"  // i2c_port_t
 #include "esp_err.h"     // esp_err_t
 #include <stdint.h>      // uint8_t
 
-#define SSD1306_CONTROL_COMMAND 0x00  /**< Control byte for command transmission (Co=0, D/C#=0). */
-#define SSD1306_CONTROL_DATA    0x40  /**< Control byte for data transmission (Co=0, D/C#=1).    */
+#define SSD1306_CONTROL_COMMAND 0x00    /**< Control byte for command transmission (Co=0, D/C#=0). */
+#define SSD1306_CONTROL_DATA    0x40    /**< Control byte for data transmission (Co=0, D/C#=1).    */
 
 #define SSD1306_MAX_COMMANDS_PER_TRANSFER 32   /**< Maximum number of commands per I2C transfer.   */
 #define SSD1306_MAX_DATA_PER_TRANSFER     128  /**< Maximum number of data bytes per I2C transfer. */
 #define SSD1306_CONTROL_BYTES             1    /**< Number of control bytes per I2C transmission.  */
+
+#define SSD1306_ADDRESS 0x3CU    /**< I2C slave address. */
+#define SSD1306_WIDTH   128      /**< Display width.     */
+#define SSD1306_HEIGHT  64       /**< Display height.    */
 
 /**
  * @brief Initialize an SSD1306 display context and hardware.
@@ -52,7 +56,8 @@
  * @param height Display height in pixels.
  * @return esp_err_t ESP_OK on success, error code otherwise.
  */
-esp_err_t SSD1306_Init(tSSD1306 *pDisplay, i2c_port_t i2cPort, uint8_t address, uint8_t width, uint8_t height);
+esp_err_t SSD1306_Init(tSSD1306 *pDisplay, i2c_port_t i2cPort, uint8_t address,
+                       uint8_t width, uint8_t height);
 
 /**
  * @brief Transmit a prepared framebuffer to the SSD1306 device.
@@ -68,6 +73,6 @@ esp_err_t SSD1306_Init(tSSD1306 *pDisplay, i2c_port_t i2cPort, uint8_t address, 
  */
 esp_err_t SSD1306_SendFrameBuffer(const tSSD1306 *pDisplay, const uint8_t *pFrameBuffer, int frameBufferLength);
 
-#endif // SSD1306_PUBLIC_H
+#endif // SSD1306_H
 
 /*** end of file SSD1306.h ***/
