@@ -39,8 +39,8 @@
  *          and the timestamp of the last state change in milliseconds.
  */
 typedef struct {
-    int mRawState;                     /**< Previous raw button state.           */
-    int mDebouncedState;               /**< Debounced button state.              */
+    bool mIsRawState;                  /**< Previous raw button state.          */
+    bool mIsDebouncedState;            /**< Current debounced button state.      */
     int64_t mStateChangedTimestampMs;  /**< Timestamp of last state change (ms). */
 } tButton;
 

@@ -29,13 +29,16 @@
 
 #include "structure/tGame.h"
 
+#define GAME_LOGIC_PLACEMENT_ATTEMPTS 200            /**< Maximal attempts to place flowers without overlap.       */
+#define GAME_LOGIC_MIN_FLOWER_DISTANCE_MULTIPLIER 6  /**< Minimal distance between flowers in multiples of radius. */
+
 /**
  * @brief Initializes a new round in the game.
  * @details Resets necessary game parameters to start a new round.
  *
  * @param pGame Pointer to the game structure.
  */
-void GameLogic_NewRound(tGame * pGame);
+void GameLogic_NewRound(tGame *pGame);
 
 /**
  * @brief Starts the game.
@@ -43,7 +46,7 @@ void GameLogic_NewRound(tGame * pGame);
  *
  * @param pGame Pointer to the game structure.
  */
-void GameLogic_StartGame(tGame * pGame);
+void GameLogic_StartGame(tGame *pGame);
 
 /**
  * @brief Updates the game state during play.

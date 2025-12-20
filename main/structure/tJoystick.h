@@ -14,8 +14,8 @@
  * Description:  Defines the tJoystick structure storing calibrated analog     *
  *               center positions and the exponential moving average (EMA)     *
  *               filtered normalized axes. Contains integer ADC center values  *
- *               for X and Y and floating-point normalized values in the range *
- *               [-1.0 ... 1.0].                                               *
+ *               for X and Y and floating-point normalized values in the       *
+ *               range [-1.0 ... 1.0].                                         *
  *                                                                             *
  ******************************************************************************/
 /**

@@ -88,14 +88,6 @@ float Utils_DistanceSquareFloat(float ax, float ay, float bx, float by);
 float Utils_AbsoluteFloat(float value);
 
 /**
- * @brief Computes the square of a floating-point number.
- *
- * @param value The floating-point value.
- * @return The square of the input.
- */
-float Utils_SquareFloat(float value);
-
-/**
  * @brief Ceilings a floating-point number to the nearest integer.
  * @details If the input is NaN, returns 0. Clamps extreme values to INT_MAX/INT_MIN.
  *

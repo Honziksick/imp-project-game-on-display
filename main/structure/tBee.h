@@ -29,9 +29,9 @@
 
 #include <stdbool.h>  // bool
 
-#define MAX_VELOCITY_X   85.0f     /**< Maximum horizontal velocity (pixels/second). */
-#define MAX_VELOCITY_Y   70.0f     /**< Maximum vertical velocity (pixels/second).   */
-#define BEE_RADIUS       3         /**< Bee sprite radius (pixels).                  */
+#define MAX_VELOCITY_X 85.0f   /**< Maximum horizontal velocity (pixels/second). */
+#define MAX_VELOCITY_Y 70.0f   /**< Maximum vertical velocity (pixels/second).   */
+#define BEE_RADIUS     3       /**< Bee sprite radius (pixels).                  */
 
 /**
  * @struct tBee

@@ -44,27 +44,44 @@
  * @param y The y-coordinate where the character will be drawn.
  * @param ch The character to be drawn.
  */
-static void Graphics_DrawChar(const tGraphics *pGraphics, const int x, const int y, char ch) {
+static void Graphics_DrawChar(const tGraphics *pGraphics, const int x, const int y, unsigned char ch) {
+    // Validate input pointers
+    if(pGraphics == NULL || pGraphics->mFrameBufferPtr == NULL) {
+        return;
+    }
+
     // Map unsupported characters to '?'
     if(ch < FONT5X7_FIRST_ASCII || ch > FONT5X7_LAST_ASCII) {
         ch = '?';
     }
 
     // Retrieve character columns from Font5x7 and draw pixels
-    const uint8_t *glyphCols = Font5x7[(int)ch - FONT5X7_FIRST_ASCII].mCols;
+    const uint8_t *glyphCols = Font5x7[ch - FONT5X7_FIRST_ASCII].mCols;
 
     // For each of the 5 columns, set pixels for the 7 rows
     for(int iCol = 0; iCol < FONT5X7_WIDTH; iCol++) {
         const uint8_t colBits = glyphCols[iCol];
 
         for(int iRow = 0; iRow < FONT5X7_HEIGHT; iRow++) {
-            const int set = (colBits >> iRow) & 1;  // LSB = top pixel
-            Graphics_SetPixel(pGraphics, x + iCol, y + iRow, (bool)set);
+            const bool set = (colBits >> iRow) & 1;  // LSB = top pixel
+            Graphics_SetPixel(pGraphics, x + iCol, y + iRow, set);
         }
     }
 } // Graphics_DrawChar()
 
+static size_t Graphics_GetPages(const tGraphics *pGraphics) {
+    return (size_t)((pGraphics->mHeight + 7) / 8);
+} // Graphics_GetPages()
+
 void Graphics_Init(tGraphics *pGraphics, const int width, const int height, uint8_t *pFrameBuffer) {
+    // Validate input parameters
+    if(pGraphics == NULL || pFrameBuffer == NULL) {
+        return;
+    }
+    if(width <= 0 || height <= 0) {
+        return;
+    }
+
     // Initialize graphics context fields
     pGraphics->mWidth = width;
     pGraphics->mHeight = height;
@@ -75,12 +92,29 @@ void Graphics_Init(tGraphics *pGraphics, const int width, const int height, uint
 } // Graphics_Init()
 
 void Graphics_Clear(const tGraphics *pGraphics) {
+    // Validate input parameters
+    if(pGraphics == NULL || pGraphics->mFrameBufferPtr == NULL) {
+        return;
+    }
+    if(pGraphics->mWidth <= 0 || pGraphics->mHeight <= 0) {
+        return;
+    }
+
     // Fill the framebuffer with zeros based on width and height (pages = height/8)
-    const size_t bufferSize = (size_t)(pGraphics->mWidth * (pGraphics->mHeight / 8));
+    const size_t pages = Graphics_GetPages(pGraphics);
+    const size_t bufferSize = (size_t)pGraphics->mWidth * pages;
     memset(pGraphics->mFrameBufferPtr, 0, bufferSize);
 } // Graphics_Clear()
 
 void Graphics_SetPixel(const tGraphics *pGraphics, const int x, const int y, const bool set) {
+    // Validate input parameters
+    if(pGraphics == NULL || pGraphics->mFrameBufferPtr == NULL) {
+        return;
+    }
+    if(pGraphics->mWidth <= 0 || pGraphics->mHeight <= 0) {
+        return;
+    }
+
     // If the pixel is out of bounds, do nothing
     if(x < 0 || y < 0 || x >= pGraphics->mWidth || y >= pGraphics->mHeight) {
         return;
@@ -102,6 +136,11 @@ void Graphics_SetPixel(const tGraphics *pGraphics, const int x, const int y, con
 
 // Source: https://moodle.vut.cz/pluginfile.php/1054968/mod_label/intro/izg_02_rasterizace_rev2022_169.pdf
 void Graphics_DrawLine(const tGraphics *pGraphics, int x1, int y1, const int x2, const int y2) {
+    // Validate input parameters
+    if(pGraphics == NULL || pGraphics->mFrameBufferPtr == NULL) {
+        return;
+    }
+
     int dx, dy;  // absolute differences in X and Y (angle)
     int sx, sy;  // step direction in X and Y
 
@@ -157,7 +196,10 @@ void Graphics_DrawLine(const tGraphics *pGraphics, int x1, int y1, const int x2,
 
 void Graphics_DrawRectangle(const tGraphics *pGraphics, const int x, const int y,
                             const int width, const int height, const bool fill) {
-    // Validate size
+    // Validate input parameters
+    if(pGraphics == NULL || pGraphics->mFrameBufferPtr == NULL) {
+        return;
+    }
     if(width <= 0 || height <= 0) {
         return;
     }
@@ -189,7 +231,10 @@ void Graphics_DrawRectangle(const tGraphics *pGraphics, const int x, const int y
 // Source: https://moodle.vut.cz/pluginfile.php/1054968/mod_label/intro/izg_02_rasterizace_rev2022_169.pdf
 void Graphics_DrawCircle(const tGraphics *pGraphics, const int centerX, const int centerY,
                          const int radius, const bool fill) {
-    // Validate radius.
+    // Validate input parameters
+    if(pGraphics == NULL || pGraphics->mFrameBufferPtr == NULL) {
+        return;
+    }
     if(radius <= 0) {
         return;
     }
@@ -238,6 +283,11 @@ void Graphics_DrawCircle(const tGraphics *pGraphics, const int centerX, const in
 } // Graphics_DrawCircle()
 
 void Graphics_DrawText(const tGraphics *pGraphics, const int x, int y, const char text[]) {
+    // Validate input parameters
+    if(pGraphics == NULL || pGraphics->mFrameBufferPtr == NULL || text == NULL) {
+        return;
+    }
+
     // Current x position
     int cursorX = x;
 

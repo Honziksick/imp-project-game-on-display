@@ -20,13 +20,6 @@
  * @brief
  */
 
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_timer.h"
-#include "esp_log.h"
-#include "esp_err.h"
-
 #include "public/SSD1306.h"
 #include "public/Graphics.h"
 #include "public/I2C.h"
@@ -37,7 +30,11 @@
 #include "structure/tGame.h"
 #include "structure/tSSD1306.h"
 #include "structure/tGraphics.h"
-
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_timer.h"
+#include "esp_log.h"
+#include "esp_err.h"
 #include <stdbool.h>
 
 static const char *TAG = "bee";
@@ -62,8 +59,8 @@ void app_main() {
     // Initialize game state
     tGame game = {0};
     game.mState = STATE_SPLASH;
-    game.mButton.mRawState = 0;
-    game.mButton.mDebouncedState = 0;
+    game.mButton.mIsRawState = 0;
+    game.mButton.mIsDebouncedState = 0;
     game.mButton.mStateChangedTimestampMs = esp_timer_get_time();
 
     // Button edge detection state
@@ -99,7 +96,7 @@ void app_main() {
         if(game.mState == STATE_SPLASH) {
             if(buttonPressed) {
                 game.mState = STATE_CALIB;
-                Renderer_Draw(&game, &graphicsContext, 0, 0);
+                Renderer_Draw(&game, &graphicsContext);
                 SSD1306_SendFrameBuffer(&oledDisplay, framebuffer, FRAMEBUFFER_SIZE);
                 Joystick_Calibrate(&game);
                 GameLogic_StartGame(&game);
@@ -121,7 +118,7 @@ void app_main() {
         else if(game.mState == STATE_GAMEOVER) {
             if(buttonPressed) {
                 game.mState = STATE_CALIB;
-                Renderer_Draw(&game, &graphicsContext, 0, 0);
+                Renderer_Draw(&game, &graphicsContext);
                 SSD1306_SendFrameBuffer(&oledDisplay, framebuffer, FRAMEBUFFER_SIZE);
                 Joystick_Calibrate(&game);
                 GameLogic_StartGame(&game);
@@ -133,7 +130,7 @@ void app_main() {
         }
 
         // Render current frame
-        Renderer_Draw(&game, &graphicsContext, normalizedX, normalizedY);
+        Renderer_Draw(&game, &graphicsContext);
         SSD1306_SendFrameBuffer(&oledDisplay, framebuffer, FRAMEBUFFER_SIZE);
 
         // Frame rate limiting (~30 FPS)

@@ -11,13 +11,19 @@
  * Created:      15.12.2025                                                    *
  * Last edit:    19.12.2025                                                    *
  *                                                                             *
- * Description:                                                                *
+ * Description:  Implements joystick input handling and calibration logic.     *
+ *               Provides sampling of analog/digital joystick inputs,          *
+ *               dead‑zone filtering, debouncing and calibration routines.     *
+ *               Maps raw input to normalized game control values and          *
+ *               exposes functions used by the game loop to poll and update    *
+ *               the current joystick state. Designed to be lightweight and    *
+ *               suitable for framebuffer-based embedded systems with a GUI.   *
  *                                                                             *
  ******************************************************************************/
 /**
  * @file Joystick.c
  * @author Jan Kalina \<xkalinj00>
- * @brief
+ * @brief Implements joystick input handling and calibration logic.
  */
 
 #include "public/Joystick.h"
@@ -26,8 +32,8 @@
 #include "freertos/task.h"        // vTaskDelay
 #include "esp_adc/adc_oneshot.h"  // oneshot API
 #include "esp_err.h"              // ESP_ERROR_CHECK
-#include <math.h>                 // fabsf(), powf()
 #include <stdint.h>               // int64_t
+#include <math.h>                 // powf
 
 /**
  * @brief Handle for ADC1 oneshot unit.
@@ -100,24 +106,26 @@ void Joystick_Read(tGame *pGame, float *pNormalizedX, float *pNormalizedY) {
     normalizedY = Utils_ClampFloat(normalizedY, -1.0f, 1.0f);
 
     // Apply deadzone
-    if(fabsf(normalizedX) < JOYSTICK_DEADZONE) {
+    if(Utils_AbsoluteFloat(normalizedX) < JOYSTICK_DEADZONE) {
         normalizedX = 0.0f;
     }
-    if(fabsf(normalizedY) < JOYSTICK_DEADZONE) {
+    if(Utils_AbsoluteFloat(normalizedY) < JOYSTICK_DEADZONE) {
         normalizedY = 0.0f;
     }
 
     // Apply non-linear scaling for finer control near center
     if(normalizedX != 0.0f) {
-        normalizedX = Utils_SignFloat1(normalizedX) * powf(fabsf(normalizedX), 1.7f);
+        normalizedX = Utils_SignFloat1(normalizedX) * powf(Utils_AbsoluteFloat(normalizedX), 1.7f);
     }
     if(normalizedY != 0.0f) {
-        normalizedY = Utils_SignFloat1(normalizedY) * powf(fabsf(normalizedY), 1.7f);
+        normalizedY = Utils_SignFloat1(normalizedY) * powf(Utils_AbsoluteFloat(normalizedY), 1.7f);
     }
 
     // Apply Exponential Moving Average (EMA) filtering
-    pGame->mJoystick.mNormalizedX = (1.0f - JOYSTICK_EMA_ALPHA) * pGame->mJoystick.mNormalizedX + JOYSTICK_EMA_ALPHA * normalizedX;
-    pGame->mJoystick.mNormalizedY = (1.0f - JOYSTICK_EMA_ALPHA) * pGame->mJoystick.mNormalizedY + JOYSTICK_EMA_ALPHA * normalizedY;
+    pGame->mJoystick.mNormalizedX =
+            (1.0f - JOYSTICK_EMA_ALPHA) * pGame->mJoystick.mNormalizedX + JOYSTICK_EMA_ALPHA * normalizedX;
+    pGame->mJoystick.mNormalizedY =
+            (1.0f - JOYSTICK_EMA_ALPHA) * pGame->mJoystick.mNormalizedY + JOYSTICK_EMA_ALPHA * normalizedY;
 
     // Update filtered values
     *pNormalizedX = pGame->mJoystick.mNormalizedX;

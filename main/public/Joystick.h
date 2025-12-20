@@ -16,8 +16,8 @@
  *               a user-guided calibration to determine center and span, and   *
  *               read normalized X/Y values in the range -1.0...1.0. Includes  *
  *               support for an integrated push button. Designed for polled    *
- *               input in the game loop. It does not perform blocking waits or *
- *               manage ISR-based events.                                      *
+ *               input in the game loop. It does not perform blocking waits    *
+ *               or manage ISR-based events.                                   *
  *                                                                             *
  ******************************************************************************/
 /**
@@ -33,11 +33,11 @@
 #include "esp_adc/adc_oneshot.h"
 
 // References: ESP32 Technical Reference Manual v5.6
-#define JOYSTICK_X_CHANNEL   ADC_CHANNEL_6     /**< GPIO34: X-axis analog input.       */
-#define JOYSTICK_Y_CHANNEL   ADC_CHANNEL_7     /**< GPIO35: Y-axis analog input.       */
+#define JOYSTICK_X_CHANNEL ADC_CHANNEL_6    /**< GPIO34: X-axis analog input.       */
+#define JOYSTICK_Y_CHANNEL ADC_CHANNEL_7    /**< GPIO35: Y-axis analog input.       */
 
-#define JOYSTICK_DEADZONE  0.08f     /**< Joystick dead zone (8 % around center).      */
-#define JOYSTICK_EMA_ALPHA 0.22f     /**< Exponential Moving Average smoothing factor. */
+#define JOYSTICK_DEADZONE  0.08f  /**< Joystick dead zone (8 % around center).      */
+#define JOYSTICK_EMA_ALPHA 0.22f  /**< Exponential Moving Average smoothing factor. */
 
 /**
  * @brief Initialize the joystick module.
@@ -54,7 +54,7 @@ void Joystick_Init();
  *
  * @param pGame Pointer to the game structure for context during calibration.
  */
-void Joystick_Calibrate(tGame * pGame);
+void Joystick_Calibrate(tGame *pGame);
 
 /**
  * @brief Read the current position of the joystick.

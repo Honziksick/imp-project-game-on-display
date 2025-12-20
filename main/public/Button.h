@@ -34,7 +34,8 @@
 #include <stdbool.h>      // bool
 
 // References: ESP32 Technical Reference Manual v5.6
-#define JOYSTICK_BUTTON_GPIO GPIO_NUM_27   /**< GPIO27: Button switch, active-low. */
+#define BUTTON_GPIO GPIO_NUM_27     /**< GPIO27: Button switch, active-low.   */
+#define BUTTON_DEBOUNCE_US 20000    /**< 20 ms debounce time in microseconds. */
 
 /**
  * @brief Initialize button module.
@@ -53,7 +54,7 @@ void Button_Init();
  * @param pGame Pointer to the game structure.
  * @return The current debounced state of the button (true for pressed, false otherwise).
  */
-bool Button_IsDebouncedState(tGame * pGame);
+bool Button_IsDebouncedState(tGame *pGame);
 
 /**
  * @brief Detects a rising edge on the button press.

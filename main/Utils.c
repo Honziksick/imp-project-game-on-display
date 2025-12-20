@@ -126,10 +126,6 @@ float Utils_AbsoluteFloat(const float value) {
     return (value < 0.0f) ? -value : value;
 } // Utils_AbsoluteFloat()
 
-float Utils_SquareFloat(const float value) {
-    return value * value;
-} // Utils_SquareFloat()
-
 int Utils_CeilFloatToInt(const float floatValue) {
     // Handle NaN inputs
     if(isnan(floatValue)) {

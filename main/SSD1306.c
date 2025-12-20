@@ -144,18 +144,27 @@ esp_err_t SSD1306_Init(tSSD1306 *pDisplay, const i2c_port_t i2cPort, const uint8
     // Initialization sequence for 128x64 display (references sections 9 Command Table and section 10 Command Descriptions)
     const uint8_t initSequence[] = {
         0xAE,        // display OFF
-        0xD5, 0x80,  // set display clock divide ratio/oscillator frequency (0x80 = recommended default)
-        0xA8, 0x3F,  // set multiplex ratio (0x3F -> 64 rows; value = N-1)
-        0xD3, 0x00,  // set display offset (0x00 = no offset)
+        0xD5,
+        0x80,  // set display clock divide ratio/oscillator frequency (0x80 = recommended default)
+        0xA8,
+        0x3F,  // set multiplex ratio (0x3F -> 64 rows; value = N-1)
+        0xD3,
+        0x00,  // set display offset (0x00 = no offset)
         0x40,        // set start line address (0x40 = start line = 0)
-        0x8D, 0x14,  // charge pump setting (0x14 = enable internal charge pump)
-        0x20, 0x00,  // set memory addressing mode (0x00 = horizontal addressing)
+        0x8D,
+        0x14,  // charge pump setting (0x14 = enable internal charge pump)
+        0x20,
+        0x00,  // set memory addressing mode (0x00 = horizontal addressing)
         0xA1,        // set segment re-map (0xA1 = column address 127 mapped to SEG0)
         0xC8,        // set COM output scan direction (0xC8 = remapped)
-        0xDA, 0x12,  // set COM pins hardware configuration (0x12 = alt. COM pins config for 128x64)
-        0x81, 0x7F,  // set contrast control (0x7F = mid-level)
-        0xD9, 0xF1,  // set pre-charge period (0xF1 = phase2/phase1 settings)
-        0xDB, 0x40,  // set VCOMH deselect level (0x40 ~ 0.77*VCC)
+        0xDA,
+        0x12,  // set COM pins hardware configuration (0x12 = alt. COM pins config for 128x64)
+        0x81,
+        0x7F,  // set contrast control (0x7F = mid-level)
+        0xD9,
+        0xF1,  // set pre-charge period (0xF1 = phase2/phase1 settings)
+        0xDB,
+        0x40,  // set VCOMH deselect level (0x40 ~ 0.77*VCC)
         0xA4,        // entire display ON (resume from RAM)
         0xA6,        // normal display (not inverted)
         0x2E,        // deactivate scroll

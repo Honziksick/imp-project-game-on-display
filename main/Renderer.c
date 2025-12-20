@@ -50,11 +50,6 @@
  *                  the function returns without rendering.
  */
 static void Renderer_DrawHUD(const tGame *pGame, const tGraphics *pGraphics) {
-    // Validate input pointers
-    if(pGame == NULL || pGraphics == NULL) {
-        return;
-    }
-
     char textBuffer[32]; // temporary buffer for text rendering
     int result = 0;
 
@@ -127,11 +122,6 @@ static void Renderer_DrawHUD(const tGame *pGame, const tGraphics *pGraphics) {
  */
 static void Renderer_DrawFlower(const tGraphics *pGraphics, const int centerX,
                                 const int centerY, const bool isTarget) {
-    // Validate input pointer
-    if(pGraphics == NULL) {
-        return;
-    }
-
     // Draw flower outline circle
     Graphics_DrawCircle(pGraphics, centerX, centerY, FLOWER_RADIUS, false);
 
@@ -162,7 +152,7 @@ static void Renderer_DrawFlower(const tGraphics *pGraphics, const int centerX,
  */
 static void Renderer_DrawBee(const tGraphics *pGraphics, const tBee *pBee) {
     // Validate input pointers
-    if(pGraphics == NULL || pBee == NULL) {
+    if(pBee == NULL) {
         return;
     }
 
