@@ -11,38 +11,61 @@
  * Created:      15.12.2025                                                    *
  * Last edit:    19.12.2025                                                    *
  *                                                                             *
- * Description:                                                                *
+ * Description:  Implements the application's entry point and main loop.       *
+ *               Responsible for hardware and peripheral initialization        *
+ *               (I2C, display, joystick, buttons), game state management,     *
+ *               frame timing, input processing (joystick and debounced        *
+ *               button), rendering pipeline invocation and framebuffer        *
+ *               delivery to the SSD1306 display. Maintains the game           *
+ *               finite-state machine (FSM) and ensures stable frame timing    *
+ *               and safe handling of peripheral return values.                *
  *                                                                             *
  ******************************************************************************/
 /**
  * @file main.c
  * @author Jan Kalina \<xkalinj00>
- * @brief
+ * @brief Application entry point and main loop.
  */
 
-#include "public/SSD1306.h"
+#include "public/Button.h"
+#include "public/GameLogic.h"
 #include "public/Graphics.h"
 #include "public/I2C.h"
 #include "public/Joystick.h"
-#include "public/Button.h"
-#include "public/GameLogic.h"
 #include "public/Renderer.h"
+#include "public/SSD1306.h"
 #include "structure/tGame.h"
-#include "structure/tSSD1306.h"
 #include "structure/tGraphics.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_timer.h"
-#include "esp_log.h"
-#include "esp_err.h"
-#include <stdbool.h>
+#include "structure/tSSD1306.h"
+#include "freertos/FreeRTOS.h"  // pdMS_TO_TICKS
+#include "freertos/task.h"      // vTaskDelay
+#include "esp_timer.h"          // esp_timer_get_time
+#include "esp_log.h"            // ESP_LOGI
+#include "esp_err.h"            // ESP_ERROR_CHECK
+#include <stdbool.h>            // bool
+#include <stdint.h>             // uint8_t, int64_t
 
-static const char *TAG = "bee";
+/**
+ * @brief Framebuffer for the SSD1306 OLED display.
+ * @details Holds raw pixel data that is rendered and sent to the display driver.
+ *          The total buffer size is defined by FRAMEBUFFER_SIZE.
+ */
+static uint8_t gFrameBuffer[FRAMEBUFFER_SIZE];
 
-// Global framebuffer and device handles
-static uint8_t framebuffer[FRAMEBUFFER_SIZE];
-static tSSD1306 oledDisplay;
-static tGraphics graphicsContext;
+/**
+ * @brief SSD1306 driver instance.
+ * @details Stores driver state, configuration and I2C-related information
+ *          required to communicate with the OLED display.
+ */
+static tSSD1306 gDisplay;
+
+/**
+ * @brief Graphics rendering context.
+ * @details Contains rendering state, dimensions and a reference to the
+ *          framebuffer used by the renderer to compose frames before sending
+ *          them to the display.
+ */
+static tGraphics gGraphicsContext;
 
 void app_main() {
     // Initialize hardware peripherals
@@ -51,28 +74,28 @@ void app_main() {
     Button_Init();
 
     // Initialize OLED display driver
-    ESP_ERROR_CHECK(SSD1306_Init(&oledDisplay, I2C_PORT, SSD1306_ADDRESS, SSD1306_WIDTH, SSD1306_HEIGHT));
+    ESP_ERROR_CHECK(SSD1306_Init(&gDisplay, I2C_PORT, SSD1306_ADDRESS, SSD1306_WIDTH, SSD1306_HEIGHT));
 
     // Initialize graphics context
-    Graphics_Init(&graphicsContext, SSD1306_WIDTH, SSD1306_HEIGHT, framebuffer);
+    Graphics_Init(&gGraphicsContext, SSD1306_WIDTH, SSD1306_HEIGHT, gFrameBuffer);
 
     // Initialize game state
     tGame game = {0};
     game.mState = STATE_SPLASH;
-    game.mButton.mIsRawState = 0;
-    game.mButton.mIsDebouncedState = 0;
+    game.mButton.mIsRawState = false;
+    game.mButton.mIsDebouncedState = false;
     game.mButton.mStateChangedTimestampMs = esp_timer_get_time();
 
     // Button edge detection state
-    int buttonEdgePrevState = 0;
+    bool buttonEdgePreviousState = false;
 
     // Frame timing
     int64_t lastTimeMicros = esp_timer_get_time();
 
     // Main game loop
-    while(1) {
+    while(true) {
         // Calculate frame delta time
-        int64_t currentTimeMicros = esp_timer_get_time();
+        const int64_t currentTimeMicros = esp_timer_get_time();
         float deltaTime = (float)(currentTimeMicros - lastTimeMicros) / 1000000.0f;
 
         // Clamp delta time to avoid huge jumps
@@ -87,55 +110,63 @@ void app_main() {
 
         // Update button state and detect press edge
         Button_IsDebouncedState(&game);
-        bool buttonPressed = Button_IsRisingEdge(&game, &buttonEdgePrevState);
+        const bool buttonPressed = Button_IsRisingEdge(&game, &buttonEdgePreviousState);
 
         // Joystick input variables
-        float normalizedX = 0.0f, normalizedY = 0.0f;
+        float normalizedX = 0.0f;
+        float normalizedY = 0.0f;
 
-        // State machine logic
-        if(game.mState == STATE_SPLASH) {
-            if(buttonPressed) {
-                game.mState = STATE_CALIB;
-                Renderer_Draw(&game, &graphicsContext);
-                SSD1306_SendFrameBuffer(&oledDisplay, framebuffer, FRAMEBUFFER_SIZE);
+        // FSM
+        switch(game.mState) {
+            case STATE_SPLASH: {
+                if(buttonPressed) {
+                    game.mState = STATE_CALIB;
+                    Renderer_Draw(&game, &gGraphicsContext);
+                    SSD1306_SendFrameBuffer(&gDisplay, gFrameBuffer, FRAMEBUFFER_SIZE);
+                    Joystick_Calibrate(&game);
+                    GameLogic_StartGame(&game);
+                }
+                break;
+            }
+            case STATE_PLAY: {
+                Joystick_Read(&game, &normalizedX, &normalizedY);
+                if(buttonPressed) {
+                    game.mState = STATE_PAUSE;
+                }
+                GameLogic_UpdatePlay(&game, deltaTime, normalizedX, normalizedY);
+            }
+            case STATE_GAMEOVER: {
+                if(buttonPressed) {
+                    game.mState = STATE_CALIB;
+                    Renderer_Draw(&game, &gGraphicsContext);
+                    SSD1306_SendFrameBuffer(&gDisplay, gFrameBuffer, FRAMEBUFFER_SIZE);
+                    Joystick_Calibrate(&game);
+                    GameLogic_StartGame(&game);
+                }
+                break;
+            }
+            case STATE_CALIB: {
                 Joystick_Calibrate(&game);
                 GameLogic_StartGame(&game);
+                break;
             }
-        }
-        else if(game.mState == STATE_PLAY) {
-            Joystick_Read(&game, &normalizedX, &normalizedY);
-            if(buttonPressed) {
-                game.mState = STATE_PAUSE;
+            case STATE_PAUSE:
+            default: {
+                Joystick_Read(&game, &normalizedX, &normalizedY);
+                if(buttonPressed) {
+                    game.mState = STATE_PLAY;
+                }
+                break;
             }
-            GameLogic_UpdatePlay(&game, deltaTime, normalizedX, normalizedY);
-        }
-        else if(game.mState == STATE_PAUSE) {
-            Joystick_Read(&game, &normalizedX, &normalizedY);
-            if(buttonPressed) {
-                game.mState = STATE_PLAY;
-            }
-        }
-        else if(game.mState == STATE_GAMEOVER) {
-            if(buttonPressed) {
-                game.mState = STATE_CALIB;
-                Renderer_Draw(&game, &graphicsContext);
-                SSD1306_SendFrameBuffer(&oledDisplay, framebuffer, FRAMEBUFFER_SIZE);
-                Joystick_Calibrate(&game);
-                GameLogic_StartGame(&game);
-            }
-        }
-        else if(game.mState == STATE_CALIB) {
-            Joystick_Calibrate(&game);
-            GameLogic_StartGame(&game);
-        }
+        } // switch(game.mState)
 
         // Render current frame
-        Renderer_Draw(&game, &graphicsContext);
-        SSD1306_SendFrameBuffer(&oledDisplay, framebuffer, FRAMEBUFFER_SIZE);
+        Renderer_Draw(&game, &gGraphicsContext);
+        SSD1306_SendFrameBuffer(&gDisplay, gFrameBuffer, FRAMEBUFFER_SIZE);
 
         // Frame rate limiting (~30 FPS)
         vTaskDelay(pdMS_TO_TICKS(33));
     }
-}
+} // app_main()
 
 /*** end of file main.c ***/
