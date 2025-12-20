@@ -32,8 +32,8 @@
 
 // References: ESP32 Pinout Reference and I2C specification
 #define I2C_PORT         I2C_NUM_0         /**< I2C port number 0. */
-#define I2C_SDA_GPIO     GPIO_NUM_21       /**< GPIO21 as SDA.     */
-#define I2C_SCL_GPIO     GPIO_NUM_22       /**< GPIO22 as SCL.     */
+#define I2C_SDA_GPIO     GPIO_NUM_25       /**< GPIO25 as SDA.     */
+#define I2C_SCL_GPIO     GPIO_NUM_26       /**< GPIO26 as SCL.     */
 #define I2C_FREQUENCY_HZ 400000u           /**< 400kHz fast mode.  */
 
 /**

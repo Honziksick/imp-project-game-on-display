@@ -54,7 +54,7 @@ static void Renderer_DrawHUD(const tGame *pGame, const tGraphics *pGraphics) {
     int result = 0;
 
     // Draw score (top-left)
-    result = snprintf(textBuffer, sizeof(textBuffer), "Score: %d", pGame->mScore);
+    result = snprintf(textBuffer, sizeof(textBuffer), "S:%d", pGame->mScore);
     if(result < 0) {
         textBuffer[0] = '\0';
     }
@@ -64,7 +64,7 @@ static void Renderer_DrawHUD(const tGame *pGame, const tGraphics *pGraphics) {
     Graphics_DrawText(pGraphics, 0, 0, textBuffer);
 
     // Draw remaining time (top-center)
-    result = snprintf(textBuffer, sizeof(textBuffer), "Time: %02d", Utils_CeilFloatToInt(pGame->mTimeLeftSec));
+    result = snprintf(textBuffer, sizeof(textBuffer), "T:%02d", Utils_CeilFloatToInt(pGame->mTimeLeftSec));
     if(result < 0) {
         textBuffer[0] = '\0';
     }
@@ -74,7 +74,7 @@ static void Renderer_DrawHUD(const tGame *pGame, const tGraphics *pGraphics) {
     Graphics_DrawText(pGraphics, 48, 0, textBuffer);
 
     // Draw pollen collection progress bar (top-right)
-    Graphics_DrawText(pGraphics, 92, 0, "Pollen: ");
+    Graphics_DrawText(pGraphics, 92, 0, "P:");
 
     // Bar background rectangle
     Graphics_DrawRectangle(pGraphics, RENDERRER_POLLEN_BAR_X_OFFSET, RENDERRER_POLLEN_BAR_Y_OFFSET,

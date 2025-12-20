@@ -134,6 +134,7 @@ void app_main() {
                     game.mState = STATE_PAUSE;
                 }
                 GameLogic_UpdatePlay(&game, deltaTime, normalizedX, normalizedY);
+                break;
             }
             case STATE_GAMEOVER: {
                 if(buttonPressed) {
