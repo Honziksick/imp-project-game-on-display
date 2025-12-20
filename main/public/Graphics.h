@@ -9,7 +9,7 @@
  * Author:       Jan Kalina <xkalinj00>                                        *
  *                                                                             *
  * Created:      15.12.2025                                                    *
- * Last edit:    18.12.2025                                                    *
+ * Last edit:    20.12.2025                                                    *
  *                                                                             *
  * Description:  Public API for simple framebuffer graphics operations.        *
  *               Provides initialization, framebuffer management, pixel        *
@@ -77,7 +77,7 @@ void Graphics_SetPixel(const tGraphics *pGraphics, int x, int y, bool set);
  *          algorithm for optimal performance without floating-point operations.
  *
  * @note Implementation inspired by IZG course materials on rasterization:
- *       `// Source: https://moodle.vut.cz/pluginfile.php/1054968/mod_label/intro/izg_02_rasterizace_rev2022_169.pdf`
+ *       `https://moodle.vut.cz/pluginfile.php/1054968/mod_label/intro/izg_02_rasterizace_rev2022_169.pdf`
  *
  * @param pGraphics Pointer to the graphics context.
  * @param x1 The x-coordinate of the starting point.
@@ -109,7 +109,7 @@ void Graphics_DrawRectangle(const tGraphics *pGraphics, int x, int y, int width,
  *          circle algorithm for efficiency.
  *
  * @note Implementation inspired by IZG course materials on rasterization:
- *       `// Source: https://moodle.vut.cz/pluginfile.php/1054968/mod_label/intro/izg_02_rasterizace_rev2022_169.pdf`
+ *       `https://moodle.vut.cz/pluginfile.php/1054968/mod_label/intro/izg_02_rasterizace_rev2022_169.pdf`
  *
  * @param pGraphics Pointer to the graphics context.
  * @param centerX The x-coordinate of the circle center.
@@ -118,6 +118,21 @@ void Graphics_DrawRectangle(const tGraphics *pGraphics, int x, int y, int width,
  * @param fill True for a filled circle, false for an outline only.
  */
 void Graphics_DrawCircle(const tGraphics *pGraphics, int centerX, int centerY, int radius, bool fill);
+
+/**
+ * @brief Draws an ellipse on the display.
+ * @details This function draws either a filled or outlined ellipse centered at
+ *          the specified coordinates. The algorithm used is based on the
+ *          midpoint ellipse drawing method.
+ *
+ * @param pGraphics Pointer to the graphics context.
+ * @param centerX The x-coordinate of the ellipse center.
+ * @param centerY The y-coordinate of the ellipse center.
+ * @param radiusX The horizontal radius of the ellipse in pixels.
+ * @param radiusY The vertical radius of the ellipse in pixels.
+ * @param fill True for a filled ellipse, false for an outline only.
+ */
+void Graphics_DrawEllipse(const tGraphics *pGraphics, int centerX, int centerY, int radiusX, int radiusY, bool fill);
 
 /**
  * @brief Draws a text string at the specified position.

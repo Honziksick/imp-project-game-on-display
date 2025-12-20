@@ -34,11 +34,11 @@
  *          allowing different subsystems to adjust their behavior accordingly.
  */
 typedef enum {
-    STATE_SPLASH = 0,       /* Title screen / instructions */
-    STATE_CALIB,            /* Joystick calibration        */
-    STATE_PLAY,             /* Active gameplay             */
-    STATE_PAUSE,            /* Paused state                */
-    STATE_GAMEOVER          /* Game over screen            */
+	STATE_SPLASH = 0,       /**< Title screen / instructions */
+	STATE_CALIB,            /**< Joystick calibration        */
+	STATE_PLAY,             /**< Active gameplay             */
+	STATE_PAUSE,            /**< Paused state                */
+	STATE_GAMEOVER          /**< Game over screen            */
 } eGameState;
 
 #endif // E_GAME_STATE_H

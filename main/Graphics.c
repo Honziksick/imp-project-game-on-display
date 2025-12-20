@@ -9,7 +9,7 @@
  * Author:       Jan Kalina <xkalinj00>                                        *
  *                                                                             *
  * Created:      15.12.2025                                                    *
- * Last edit:    18.12.2025                                                    *
+ * Last edit:    20.12.2025                                                    *
  *                                                                             *
 * Description:   Implementation of framebuffer-based graphics operations       *
  *               including pixel manipulation, line and shape drawing          *
@@ -279,8 +279,57 @@ void Graphics_DrawCircle(const tGraphics *pGraphics, const int centerX, const in
         P += Y2;
         Y2 += 2;
         ++y;
-    }
+    } // while
 } // Graphics_DrawCircle()
+
+void Graphics_DrawEllipse(const tGraphics *pGraphics, const int centerX, const int centerY,
+                          const int radiusX, const int radiusY, const bool fill) {
+    // Validate input parameters
+    if(pGraphics == NULL || pGraphics->mFrameBufferPtr == NULL) {
+        return;
+    }
+    if(radiusX <= 0 || radiusY <= 0) {
+        return;
+    }
+
+    // Midpoint ellipse algorithm parameters
+    int x = 0;
+    int y = radiusY;
+    const int radiusX2 = radiusX * radiusX;
+    const int radiusY2 = radiusY * radiusY;
+    int error = radiusY2 - (2 * radiusY - 1) * radiusX2;
+    int stopX = 0;
+    int stopY = 2 * radiusY2 * radiusX;
+
+    // Region 1
+    while(stopX <= stopY) {
+        // Fill
+        if(fill) {
+            Graphics_DrawLine(pGraphics, centerX - x, centerY + y, centerX + x, centerY + y);
+            Graphics_DrawLine(pGraphics, centerX - x, centerY - y, centerX + x, centerY - y);
+        }
+        // Outline
+        else {
+            Graphics_SetPixel(pGraphics, centerX + x, centerY + y, true);
+            Graphics_SetPixel(pGraphics, centerX - x, centerY + y, true);
+            Graphics_SetPixel(pGraphics, centerX - x, centerY - y, true);
+            Graphics_SetPixel(pGraphics, centerX + x, centerY - y, true);
+        }
+
+        // Update decision parameter and coordinates
+        x++;
+        stopX += 2 * radiusY2;
+        error += 2 * (x * radiusY2 + radiusY2);
+
+        // Region 2
+        if(2 * error + (2 * radiusY - 1) * radiusX2 > 0) {
+            y--;
+            stopY -= 2 * radiusX2;
+            error += radiusX2 - 2 * y * radiusX2;
+        }
+    } // while
+} // Graphics_DrawEllipse()
+
 
 void Graphics_DrawText(const tGraphics *pGraphics, const int x, int y, const char text[]) {
     // Validate input parameters

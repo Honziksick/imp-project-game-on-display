@@ -29,10 +29,15 @@
 #define T_GAME_H
 
 #include "enum/eGameState.h"
-#include "tJoystick.h"
-#include "tButton.h"
-#include "tFlower.h"
-#include "tBee.h"
+#include "structure/tJoystick.h"
+#include "structure/tButton.h"
+#include "structure/tBee.h"
+#include "structure/tFlower.h"
+#include "structure/tSpider.h"
+#include "structure/tRainDrop.h"
+#include "structure/tPowerUp.h"
+#include "structure/tShield.h"
+#include "structure/tHoney.h"
 
 #define COLLECT_TIME_SEC 1.2f      /**< Time to collect pollen (seconds) */
 #define GAME_TIME_SEC    60.0f     /**< Total game duration (seconds) */
@@ -47,14 +52,20 @@
  *          input states.
  */
 typedef struct {
-    eGameState mState;          /**< Current game state.                   */
-    tBee mBee;                  /**< Player-controlled bee.                */
-    tFlower mSourceFlower;      /**< Pollen source flower.                 */
-    tFlower mTargetFlower;      /**< Pollen delivery target flower         */
-    int mScore;                 /**< Player score (successful deliveries). */
-    float mTimeLeftSec;         /**< Remaining game time (seconds).        */
-    tJoystick mJoystick;        /**< Calibrated & filtered joystick.       */
-    tButton mButton;            /**< Debounced button state.               */
+    eGameState mState;                      /**< Current game state.                   */
+    tBee mBee;                              /**< Player-controlled bee.                */
+    uint8_t mBeeFrame;                      /**< Current animation frame of the bee.   */
+    tFlower mSourceFlower;                  /**< Pollen source flower.                 */
+    tFlower mTargetFlower;                  /**< Pollen delivery target flower         */
+    tSpider mSpiders[MAX_SPIDERS];          /**< Active spiders in the game.           */
+    tRainDrop mRainDrops[MAX_RAINDROPS];    /**< Active raindrops in the game.         */
+    tPowerUp mPowerUps[MAX_POWERUPS];       /**< Active power-ups in the game.         */
+    tShield mShield;                        /**< Shield power-up.                      */
+    tHoney mHoney;                          /**< Honey (speed boost) power-up.         */
+    int mScore;                             /**< Player score (successful deliveries). */
+    float mTimeLeftSec;                     /**< Remaining game time (seconds).        */
+    tJoystick mJoystick;                    /**< Calibrated & filtered joystick.       */
+    tButton mButton;                        /**< Debounced button state.               */
 } tGame;
 
 #endif // T_GAME_H

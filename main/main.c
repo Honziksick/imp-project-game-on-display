@@ -86,6 +86,21 @@ void app_main() {
     game.mButton.mIsDebouncedState = false;
     game.mButton.mStateChangedTimestampMs = esp_timer_get_time();
 
+    // Initialize all game entities to inactive state
+    for(int iSpider = 0; iSpider < MAX_SPIDERS; iSpider++) {
+        game.mSpiders[iSpider].mIsActive = false;
+    }
+    for(int iRaindrop = 0; iRaindrop < MAX_RAINDROPS; iRaindrop++) {
+        game.mRainDrops[iRaindrop].mIsActive = false;
+    }
+    for(int iPowerUP = 0; iPowerUP < MAX_POWERUPS; iPowerUP++) {
+        game.mPowerUps[iPowerUP].mIsActive = false;
+    }
+    game.mShield.mIsActive = false;
+    game.mShield.mTimeLeft = 0.0f;
+    game.mHoney.mIsActive = false;
+    game.mHoney.mTimeLeft = 0.0f;
+
     // Button edge detection state
     bool buttonEdgePreviousState = false;
 

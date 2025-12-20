@@ -59,6 +59,12 @@ void GameLogic_StartGame(tGame *pGame);
  */
 void GameLogic_UpdatePlay(tGame *pGame, float deltaTime, float normalizedX, float normalizedY);
 
+void GameLogic_SpawnSpiders(tGame *pGame);
+
+void GameLogic_UpdateRain(tGame *pGame, float deltaTime);
+
+void GameLogic_CheckCollisions(tGame *pGame);
+
 #endif // GAME_LOGIC_H
 
 /*** end of file GameLogic.h ***/
