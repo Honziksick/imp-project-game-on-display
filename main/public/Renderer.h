@@ -9,7 +9,7 @@
  * Author:       Jan Kalina <xkalinj00>                                        *
  *                                                                             *
  * Created:      15.12.2025                                                    *
- * Last edit:    19.12.2025                                                    *
+ * Last edit:    20.12.2025                                                    *
  *                                                                             *
  * Description:  Public renderer interface responsible for translating game    *
  *               state into framebuffer drawing commands. Accepts normalized   *
@@ -32,17 +32,20 @@
 #include "structure/tGame.h"
 #include "structure/tGraphics.h"
 
+#define RENDERRER_POLLEN_BAR_X_OFFSET 102   /**< X offset for pollen bar from the right edge. */
+#define RENDERRER_POLLEN_BAR_Y_OFFSET 0     /**< Y offset for pollen bar from the top edge.   */
+
+#define RENDERRER_POLLEN_BAR_WIDTH  24  /**< Width of the pollen progress bar.  */
+#define RENDERRER_POLLEN_BAR_HEIGHT 7   /**< Height of the pollen progress bar. */
+
 /**
  * @brief Draw the game state to the graphics buffer.
- * @details Renders the current game state onto the provided graphics buffer
- *          based on normalized coordinates.
+ * @details Renders the current game state onto the provided graphics buffer.
  *
  * @param pGame Pointer to the game structure containing the current state.
  * @param pGraphics Pointer to the graphics structure for rendering.
- * @param normalizedX Normalized X coordinate for rendering context.
- * @param normalizedY Normalized Y coordinate for rendering context.
  */
-void Renderer_Draw(tGame *pGame, tGraphics *pGraphics, float normalizedX, float normalizedY);
+void Renderer_Draw(const tGame *pGame, const tGraphics *pGraphics);
 
 #endif // RENDERER_H
 

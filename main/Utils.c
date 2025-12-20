@@ -9,7 +9,7 @@
  * Author:       Jan Kalina <xkalinj00>                                        *
  *                                                                             *
  * Created:      15.12.2025                                                    *
- * Last edit:    19.12.2025                                                    *
+ * Last edit:    20.12.2025                                                    *
  *                                                                             *
  * Description:  Utility functions for common mathematical and randomization   *
  *               operations. Provides floating-point clamping, sign extraction,*
@@ -25,8 +25,28 @@
  */
 
 #include "public/Utils.h"
-#include "esp_random.h"
-#include <math.h>  // isnan, isinf
+#include "esp_random.h"  // esp_random()
+#include <limits.h>      // INT_MAX, INT_MIN
+#include <stdint.h>      // uint32_t, int64_t, uint64_t
+#include <math.h>        // isnan, isinf
+
+/**
+ * @brief Safely converts a long integer to int, clamping to INT_MAX/INT_MIN
+ *        on overflow.
+ *
+ * @param longValue The long integer value to convert.
+ * @return The converted int value, clamped if out of range.
+ */
+static int Utils_SafeLongToInt(const long longValue) {
+    if(longValue > (long)INT_MAX) {
+        return INT_MAX;
+    }
+    if(longValue < (long)INT_MIN) {
+        return INT_MIN;
+    }
+
+    return (int)longValue;
+} // Utils_SafeLongToInt()
 
 float Utils_ClampFloat(const float value, const float low, const float high) {
     // Handle invalid inputs
@@ -48,7 +68,7 @@ float Utils_ClampFloat(const float value, const float low, const float high) {
         return high;
     }
     return value;
-}
+} // Utils_ClampFloat()
 
 float Utils_SignFloat1(const float value) {
     // Handle NaN
@@ -62,7 +82,7 @@ float Utils_SignFloat1(const float value) {
 
 uint32_t Utils_GenerateRandomU32() {
     return esp_random();
-}
+} // Utils_GenerateRandomU32()
 
 int Utils_GetRandomInRange(const int low, const int high) {
     // Validate range
@@ -70,18 +90,23 @@ int Utils_GetRandomInRange(const int low, const int high) {
         return low;
     }
 
-    // Handle edge case where low == high
     if(low == high) {
         return low;
     }
 
-    // Compute span safely (high - low + 1) without overflow
-    const uint32_t span = (uint32_t)(high - low + 1);
-    const uint32_t randomValue = Utils_GenerateRandomU32();
+    // Compute span in 64-bit to avoid overflow before cast
+    const int64_t diff = (int64_t)high - (int64_t)low;
+    const uint64_t span = (uint64_t)diff + 1ull;
 
-    // Modulo to fit range and add offset
-    return low + (int)(randomValue % span);
-}
+    // Build a 64-bit random value from two 32-bit RNG calls
+    const uint64_t randomHighU32 = Utils_GenerateRandomU32();
+    const uint64_t randomLowU32 = Utils_GenerateRandomU32();
+    const uint64_t randomU64 = (randomHighU32 << 32) | randomLowU32;
+
+    // Reduce to range and add offset (modulo on 64-bit span)
+    const uint64_t mod = randomU64 % span;
+    return (int)((int64_t)low + (int64_t)mod);
+} // Utils_GetRandomInRange()
 
 float Utils_DistanceSquareFloat(const float ax, const float ay, const float bx, const float by) {
     // Handle NaN/Inf inputs
@@ -95,6 +120,98 @@ float Utils_DistanceSquareFloat(const float ax, const float ay, const float bx, 
     const float deltaY = ay - by;
 
     return deltaX * deltaX + deltaY * deltaY;
-}
+} // Utils_DistanceSquareFloat()
+
+float Utils_AbsoluteFloat(const float value) {
+    return (value < 0.0f) ? -value : value;
+} // Utils_AbsoluteFloat()
+
+float Utils_SquareFloat(const float value) {
+    return value * value;
+} // Utils_SquareFloat()
+
+int Utils_CeilFloatToInt(const float floatValue) {
+    // Handle NaN inputs
+    if(isnan(floatValue)) {
+        return 0;
+    }
+
+    // Clamp extreme values to INT_MAX/INT_MIN to avoid undefined casts
+    if(floatValue >= (float)INT_MAX) {
+        return INT_MAX;
+    }
+    if(floatValue <= (float)INT_MIN) {
+        return INT_MIN;
+    }
+
+    // Truncate towards zero to get integer part
+    const int integerPart = (int)floatValue;
+
+    // For positive values with fractional part, increment because truncation goes towards zero
+    if(floatValue > 0.0f && (float)integerPart < floatValue) {
+        return integerPart + 1;
+    }
+
+    return integerPart;
+} // Utils_CeilFloatToInt()
+
+int Utils_FloorFloatToInt(const float floatValue) {
+    // Handle NaN inputs
+    if(isnan(floatValue)) {
+        return 0;
+    }
+
+    // Clamp extreme values to INT_MAX/INT_MIN to avoid undefined casts
+    if(floatValue >= (float)INT_MAX) {
+        return INT_MAX;
+    }
+    if(floatValue <= (float)INT_MIN) {
+        return INT_MIN;
+    }
+
+    // Truncate towards zero to get integer part
+    const int integerPart = (int)floatValue;
+
+    // For positive values with fractional part, decrement because truncation goes towards zero
+    if(floatValue < 0.0f && (float)integerPart > floatValue) {
+        return integerPart - 1;
+    }
+    return integerPart;
+} // Utils_FloorFloatToInt()
+
+int Utils_LRoundFloatToInt(const float floatValue) {
+    // Handle NaN inputs
+    if(isnan(floatValue)) {
+        return 0l;
+    }
+
+    // If value is infinite, return value clamped to the appropriate limit
+    if(isinf(floatValue)) {
+        long limit = (floatValue > 0.0f) ? LONG_MAX : LONG_MIN;
+        return Utils_SafeLongToInt(limit);
+    }
+
+    // Use double for safer boundary comparisons
+    const double doubleValue = (double)floatValue;
+
+    // If adding/subtracting 0.5 would overflow, return the limit
+    if(doubleValue >= (double)LONG_MAX - 0.5) {
+        return Utils_SafeLongToInt(LONG_MAX);
+    }
+    if(doubleValue <= (double)LONG_MIN + 0.5) {
+        return Utils_SafeLongToInt(LONG_MIN);
+    }
+
+    // Round half values away from zero
+    long rounded;
+    if(doubleValue >= 0.0) {
+        rounded = (long)(doubleValue + 0.5);
+    }
+    else {
+        rounded = (long)(doubleValue - 0.5);
+    }
+
+    return Utils_SafeLongToInt(rounded);
+} // Utils_LRoundFloatToLong()
 
 /*** end of file Utils.c ***/

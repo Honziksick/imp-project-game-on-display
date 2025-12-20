@@ -5,19 +5,26 @@
  * University:   Faculty of Information Technology, BUT                        *
  * Subject:      IMP: Microprocessors and Embedded Systems                     *
  *                                                                             *
- * File:         Joystick.c                                                    *
+ * File:         Renderer.c                                                    *
  * Author:       Jan Kalina <xkalinj00>                                        *
  *                                                                             *
  * Created:      15.12.2025                                                    *
- * Last edit:    19.12.2025                                                    *
+ * Last edit:    20.12.2025                                                    *
  *                                                                             *
- * Description:                                                                *
+ * Description:  Implements rendering logic for the game. The module is        *
+ *               responsible for composing each framebuffer frame: drawing     *
+ *               HUD elements (score, time, pollen bar), rendering flowers     *
+ *               (source and target markers), drawing the bee sprite based     *
+ *               on its floating-point position, and presenting state-specific *
+ *               screens (splash, calibration, pause, game over). The code     *
+ *               uses the Graphics primitives and utility helpers to convert   *
+ *               coordinates and to safely format text for display.            *
  *                                                                             *
  ******************************************************************************/
 /**
- * @file Joystick.c
+ * @file Renderer.c
  * @author Jan Kalina \<xkalinj00>
- * @brief
+ * @brief Framebuffer rendering routines for HUD, game entities and state screens.
  */
 
 #include "public/Renderer.h"
@@ -25,75 +32,159 @@
 #include "public/Utils.h"
 #include "structure/tGame.h"
 #include "structure/tGraphics.h"
+#include "structure/tFlower.h"
 #include "structure/tBee.h"
-#include <stdio.h>
-#include <math.h>
+#include <stdbool.h>  // bool
+#include <stdio.h>    // snprintf
 
-static void Renderer_DrawHUD(tGame *pGame, tGraphics *pGraphics) {
-    char textBuffer[32];
+/**
+ * @brief Render the HUD (score, remaining time and pollen progress).
+ * @details Renders score and remaining time into a temporary text buffer
+ *          (safe snprintf handling), draws the pollen progress bar background
+ *          and the filled portion based on bee pollen state. The function
+ *          validates input pointers and clamps the fill width to the valid range.
+ *
+ * @param pGame Pointer to the current game state. If NULL the function returns
+ *              without rendering.
+ * @param pGraphics Pointer to the graphics context used for drawing. If NULL
+ *                  the function returns without rendering.
+ */
+static void Renderer_DrawHUD(const tGame *pGame, const tGraphics *pGraphics) {
+    // Validate input pointers
+    if(pGame == NULL || pGraphics == NULL) {
+        return;
+    }
+
+    char textBuffer[32]; // temporary buffer for text rendering
+    int result = 0;
 
     // Draw score (top-left)
-    snprintf(textBuffer, sizeof(textBuffer), "S:%d", pGame->mScore);
+    result = snprintf(textBuffer, sizeof(textBuffer), "Score: %d", pGame->mScore);
+    if(result < 0) {
+        textBuffer[0] = '\0';
+    }
+    else if((size_t)result >= sizeof(textBuffer)) {
+        textBuffer[sizeof(textBuffer) - 1] = '\0';
+    }
     Graphics_DrawText(pGraphics, 0, 0, textBuffer);
 
     // Draw remaining time (top-center)
-    snprintf(textBuffer, sizeof(textBuffer), "T:%02d", (int)ceilf(pGame->mTimeLeftSec));
+    result = snprintf(textBuffer, sizeof(textBuffer), "Time: %02d", Utils_CeilFloatToInt(pGame->mTimeLeftSec));
+    if(result < 0) {
+        textBuffer[0] = '\0';
+    }
+    else if((size_t)result >= sizeof(textBuffer)) {
+        textBuffer[sizeof(textBuffer) - 1] = '\0';
+    }
     Graphics_DrawText(pGraphics, 48, 0, textBuffer);
 
     // Draw pollen collection progress bar (top-right)
-    Graphics_DrawText(pGraphics, 92, 0, "P");
+    Graphics_DrawText(pGraphics, 92, 0, "Pollen: ");
 
     // Bar background rectangle
-    int barX = 102, barY = 0, barWidth = 24, barHeight = 7;
-    Graphics_DrawRectangle(pGraphics, barX, barY, barWidth, barHeight, 0);
+    Graphics_DrawRectangle(pGraphics, RENDERRER_POLLEN_BAR_X_OFFSET, RENDERRER_POLLEN_BAR_Y_OFFSET,
+                           RENDERRER_POLLEN_BAR_WIDTH, RENDERRER_POLLEN_BAR_HEIGHT, false);
 
-    // Calculate filled portion based on pollen progress
-    int fillWidth = (int)floorf((barWidth - 2) * Utils_ClampFloat(pGame->mBee.mPollenFill, 0.0f, 1.0f));
+    // Calculate filled portion of the pollen bar based on pollen progress
+    const int maxFillWidth = RENDERRER_POLLEN_BAR_WIDTH - 2;
+    int fillWidth = Utils_FloorFloatToInt(
+            (float)maxFillWidth * Utils_ClampFloat(pGame->mBee.mPollenFill, 0.0f, 1.0f)
+            );
+
+    // If bee has collected pollen, fill the bar completely
     if(pGame->mBee.mHasPollen) {
-        fillWidth = (barWidth - 2);
+        fillWidth = maxFillWidth;
     }
 
-    // Draw filled portion
+    // Clamp fill width to valid range if needed
+    if(fillWidth < 0) {
+        fillWidth = 0;
+    }
+    if(fillWidth > maxFillWidth) {
+        fillWidth = maxFillWidth;
+    }
+
+    // Draw filled portion of the pollen bar
     if(fillWidth > 0) {
-        Graphics_DrawRectangle(pGraphics, barX + 1, barY + 1, fillWidth, barHeight - 2, 1);
+        Graphics_DrawRectangle(pGraphics, RENDERRER_POLLEN_BAR_X_OFFSET + 1,
+                               RENDERRER_POLLEN_BAR_Y_OFFSET + 1, fillWidth,
+                               RENDERRER_POLLEN_BAR_HEIGHT - 2, true);
     }
-}
+} // Renderer_DrawHUD()
 
-static void Renderer_DrawFlower(tGraphics *pGraphics, int x, int y, int isTarget) {
+/**
+ * @brief Draw a flower marker at the given pixel coordinates.
+ * @details Draws the flower outline and a center indicator. When isTarget is true
+ *          the function draws a filled center dot and a horizontal marker line,
+ *          otherwise it draws a smaller center dot and a vertical marker line.
+ *          Coordinates are expected in integer pixels.
+ *
+ * @param pGraphics Pointer to the graphics context used for drawing. If NULL
+ *                  nothing is drawn.
+ * @param centerX X coordinate of the flower center in pixels.
+ * @param centerY Y coordinate of the flower center in pixels.
+ * @param isTarget If true draw the target variant (filled center + horizontal line).
+ */
+static void Renderer_DrawFlower(const tGraphics *pGraphics, const int centerX,
+                                const int centerY, const bool isTarget) {
+    // Validate input pointer
+    if(pGraphics == NULL) {
+        return;
+    }
+
     // Draw flower outline circle
-    Graphics_DrawCircle(pGraphics, x, y, FLOWER_RADIUS, 0);
+    Graphics_DrawCircle(pGraphics, centerX, centerY, FLOWER_RADIUS, false);
 
-    // Draw center indicator (different for source vs target)
+    // Draw center indicator (different for source and target)
     if(isTarget) {
         // Target: filled center dot + horizontal line
-        Graphics_DrawCircle(pGraphics, x, y, 2, 1);
-        Graphics_DrawLine(pGraphics, x - 4, y, x + 4, y);
+        Graphics_DrawCircle(pGraphics, centerX, centerY, 2, true);
+        Graphics_DrawLine(pGraphics, centerX - 4, centerY, centerX + 4, centerY);
     }
     else {
         // Source: small center dot + vertical line
-        Graphics_DrawCircle(pGraphics, x, y, 1, 1);
-        Graphics_DrawLine(pGraphics, x, y - 4, x, y + 4);
+        Graphics_DrawCircle(pGraphics, centerX, centerY, 1, true);
+        Graphics_DrawLine(pGraphics, centerX, centerY - 4, centerX, centerY + 4);
     }
-}
+} // Renderer_DrawFlower()
 
-static void Renderer_DrawBee(tGraphics *pGraphics, const tBee *pBee) {
+/**
+ * @brief Draw the bee at its current position.
+ * @details Rounds the bee's floating-point position to integer pixel coordinates
+ *          (via utility functions), draws the bee body as a filled circle and
+ *          additional wing pixels. The function validates its input pointers
+ *          and performs no drawing if either pointer is NULL.
+ *
+ * @param pGraphics Pointer to the graphics context used for drawing. If NULL
+ *                  nothing is drawn.
+ * @param pBee Pointer to the bee state containing the floating-point position.
+ *             If NULL nothing is drawn.
+ */
+static void Renderer_DrawBee(const tGraphics *pGraphics, const tBee *pBee) {
+    // Validate input pointers
+    if(pGraphics == NULL || pBee == NULL) {
+        return;
+    }
+
     // Round float position to integer pixel coordinates
-    int pixelX = (int)lroundf(pBee->mPosX);
-    int pixelY = (int)lroundf(pBee->mPosY);
+    const int pixelX = Utils_LRoundFloatToInt(pBee->mPosX);
+    const int pixelY = Utils_LRoundFloatToInt(pBee->mPosY);
 
     // Draw bee body (filled circle)
-    Graphics_DrawCircle(pGraphics, pixelX, pixelY, BEE_RADIUS, 1);
+    Graphics_DrawCircle(pGraphics, pixelX, pixelY, BEE_RADIUS, true);
 
     // Draw wing pixels
-    Graphics_SetPixel(pGraphics, pixelX - 3, pixelY - 2, 1);
-    Graphics_SetPixel(pGraphics, pixelX + 3, pixelY - 2, 1);
-    Graphics_SetPixel(pGraphics, pixelX - 2, pixelY - 3, 1);
-    Graphics_SetPixel(pGraphics, pixelX + 2, pixelY - 3, 1);
-}
+    Graphics_SetPixel(pGraphics, pixelX - 3, pixelY - 2, true);
+    Graphics_SetPixel(pGraphics, pixelX + 3, pixelY - 2, true);
+    Graphics_SetPixel(pGraphics, pixelX - 2, pixelY - 3, true);
+    Graphics_SetPixel(pGraphics, pixelX + 2, pixelY - 3, true);
+} // Renderer_DrawBee()
 
-void Renderer_Draw(tGame *pGame, tGraphics *pGraphics, float normalizedX, float normalizedY) {
-    (void)normalizedX;
-    (void)normalizedY;
+void Renderer_Draw(const tGame *pGame, const tGraphics *pGraphics) {
+    // Validate input pointers
+    if(pGame == NULL || pGraphics == NULL) {
+        return;
+    }
 
     // Clear framebuffer for new frame
     Graphics_Clear(pGraphics);
@@ -132,10 +223,17 @@ void Renderer_Draw(tGame *pGame, tGraphics *pGraphics, float normalizedX, float 
         Graphics_DrawText(pGraphics, 26, 24, "GAME OVER");
 
         char scoreBuffer[24];
-        snprintf(scoreBuffer, sizeof(scoreBuffer), "Score: %d", pGame->mScore);
+        const int result = snprintf(scoreBuffer, sizeof(scoreBuffer), "Score: %d", pGame->mScore);
+        if(result < 0) {
+            scoreBuffer[0] = '\0';
+        }
+        else if((size_t)result >= sizeof(scoreBuffer)) {
+            scoreBuffer[sizeof(scoreBuffer) - 1] = '\0';
+        }
+
         Graphics_DrawText(pGraphics, 26, 34, scoreBuffer);
         Graphics_DrawText(pGraphics, 18, 52, "Press SW to retry");
     }
-}
+} // Renderer_Draw()
 
 /*** end of file Renderer.c ***/
