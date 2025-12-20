@@ -28,7 +28,8 @@
 #ifndef T_BUTTON_H
 #define T_BUTTON_H
 
-#include <stdint.h>  // int64_t
+#include <stdbool.h>  // bool
+#include <stdint.h>   // int64_t
 
 /**
  * @struct tButton
