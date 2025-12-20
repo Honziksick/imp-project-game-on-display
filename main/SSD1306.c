@@ -30,6 +30,21 @@
 #include "freertos/task.h"      // vTaskDelay
 #include "driver/i2c.h"         // I2C master functions
 
+/**
+ * @brief Writes a sequence of bytes to an I2C device.
+ * @details Creates an I2C command link, builds a write transaction
+ *          (START + address\|write + data + STOP), executes it with a 100 ms
+ *          timeout and deletes the command link. Caller must ensure that pData
+ *          points to valid memory and that dataLength iswithin allowed limits
+ *          for the underlying driver/adapter.
+ *
+ * @param port I2C port to use for the transaction.
+ * @param address 7-bit I2C address of the target device.
+ * @param pData Pointer to the data buffer to transmit (caller supplies control
+ *              byte if needed).
+ * @param dataLength Number of bytes to transmit from pData.
+ * @return esp_err_t Returns ESP_OK on success or an ESP error code on failure.
+ */
 static esp_err_t SSD1306_I2CWriteBytes(const i2c_port_t port, const uint8_t address,
                                        const uint8_t *pData, const size_t dataLength) {
     // Create I2C command link for transaction
@@ -48,16 +63,42 @@ static esp_err_t SSD1306_I2CWriteBytes(const i2c_port_t port, const uint8_t addr
     i2c_cmd_link_delete(commandLink);
 
     return result;
-} // SSD1306_I2CWriteBytes
+} // SSD1306_I2CWriteBytes()
 
+/**
+ * @brief Sends a single command byte to the SSD1306 display.
+ * @details Prepares a 2-byte buffer containing the SSD1306 command-mode control
+ *          byte followed by the command byte, then forwards the buffer to
+ *          SSD1306_I2CWriteBytes() for transmission.
+ *
+ * @param pDisplay Pointer to the tSSD1306 display configuration (provides I2C
+ *                 port and address).
+ * @param command Single command byte to send to the display.
+ * @return esp_err_t Returns ESP_OK on success or an ESP error code returned
+ *         by the I2C write.
+ */
 static esp_err_t SSD1306_SendCommand(const tSSD1306 *pDisplay, const uint8_t command) {
     // Prepare 2-byte buffer for Control byte + Command byte (p20, section 8.1.5.2)
     const uint8_t commandBuffer[2] = {SSD1306_CONTROL_COMMAND, command};  // Co=0, D/C#=0 for command
 
     // Send via I2C
     return SSD1306_I2CWriteBytes(pDisplay->mI2CPort, pDisplay->mAddress, commandBuffer, sizeof(commandBuffer));
-}
+} // SSD1306_SendCommand()
 
+/**
+ * @brief Sends a list of command bytes to the SSD1306 in chunks.
+ * @details Splits the provided commands array into chunks of up to
+ *          SSD1306_MAX_COMMANDS_PER_TRANSFER, prefixes each chunk with the
+ *          SSD1306 command-mode control byte and transmits each chunk via
+ *          SSD1306_I2CWriteBytes(). The function aborts and returns the first
+ *          error encountered.
+ *
+ * @param pDisplay Pointer to the tSSD1306 display configuration.
+ * @param commands Pointer to the array of command bytes to send.
+ * @param commandsCount Number of bytes in the commands array.
+ * @return esp_err_t Returns ESP_OK if all chunks were transmitted successfully,
+ *         otherwise returns the first non-ESP_OK error code.
+ */
 static esp_err_t SSD1306_SendCommandList(const tSSD1306 *pDisplay, const uint8_t commands[], size_t commandsCount) {
     uint8_t transmitBuffer[SSD1306_CONTROL_BYTES + SSD1306_MAX_COMMANDS_PER_TRANSFER];  // control byte + max 32 command bytes per transfer
     esp_err_t result = ESP_OK;
@@ -90,7 +131,7 @@ static esp_err_t SSD1306_SendCommandList(const tSSD1306 *pDisplay, const uint8_t
     }
 
     return ESP_OK;
-} // SSD1306_SendCommandList
+} // SSD1306_SendCommandList()
 
 esp_err_t SSD1306_Init(tSSD1306 *pDisplay, const i2c_port_t i2cPort, const uint8_t address,
                        const uint8_t width, const uint8_t height) {
@@ -128,7 +169,7 @@ esp_err_t SSD1306_Init(tSSD1306 *pDisplay, const i2c_port_t i2cPort, const uint8
     vTaskDelay(pdMS_TO_TICKS(50));
 
     return initResult;
-} // SSD1306_Init
+} // SSD1306_Init()
 
 esp_err_t SSD1306_SendFrameBuffer(const tSSD1306 *pDisplay, const uint8_t *pFrameBuffer,
                                   const int frameBufferLength) {
@@ -179,6 +220,6 @@ esp_err_t SSD1306_SendFrameBuffer(const tSSD1306 *pDisplay, const uint8_t *pFram
     }
 
     return ESP_OK;
-} // SSD1306_SendFrameBuffer
+} // SSD1306_SendFrameBuffer()
 
 /*** end of file SSD1306.c ***/
