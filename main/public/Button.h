@@ -52,9 +52,8 @@ void Button_Init();
  *          the current debounced state.
  *
  * @param pGame Pointer to the game structure.
- * @return The current debounced state of the button (true for pressed, false otherwise).
  */
-bool Button_IsDebouncedState(tGame *pGame);
+void Button_IsDebouncedState(tGame *pGame);
 
 /**
  * @brief Detects a rising edge on the button press.
@@ -63,11 +62,11 @@ bool Button_IsDebouncedState(tGame *pGame);
  *          pressed to pressed) has occurred.
  *
  * @param pGame Pointer to the game structure.
- * @param pPreviousState Pointer to an integer storing the previous state of
+ * @param pPreviousState Pointer to an boolean representing the previous state of
  *                       the button.
  * @return True if a rising edge is detected, false otherwise.
  */
-bool Button_IsRisingEdge(const tGame *pGame, int *pPreviousState);
+bool Button_IsRisingEdge(const tGame *pGame, bool *pPreviousState);
 
 #endif // BUTTON_H
 

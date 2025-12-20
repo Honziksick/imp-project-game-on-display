@@ -53,10 +53,10 @@ void Button_Init() {
     ESP_ERROR_CHECK(gpio_config(&config));
 } // Button_Init()
 
-bool Button_IsDebouncedState(tGame *pGame) {
+void Button_IsDebouncedState(tGame *pGame) {
     // Validate input pointer
     if(pGame == NULL) {
-        return false;
+        return;
     }
 
     // Get current time in MICROseconds since boot
@@ -76,11 +76,9 @@ bool Button_IsDebouncedState(tGame *pGame) {
     if(deltaUs >= BUTTON_DEBOUNCE_US) {
         pGame->mButton.mIsDebouncedState = rawState;
     }
-
-    return pGame->mButton.mIsDebouncedState;
 } // Button_UpdateDebounced()
 
-bool Button_IsRisingEdge(const tGame *pGame, int *pPreviousState) {
+bool Button_IsRisingEdge(const tGame *pGame, bool *pPreviousState) {
     // Validate input pointers
     if(pGame == NULL || pPreviousState == NULL) {
         return false;
