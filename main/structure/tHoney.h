@@ -29,8 +29,8 @@
 
 #include <stdbool.h>  // bool
 
-#define HONEY_DURATION   3.0f       /**< Duration of the honey power-up effect in seconds. */
-#define HONEY_MULTIPLIER 1.5f       /**< Speed multiplier when honey power-up is active.   */
+#define HONEY_DURATION 3.0f              /**< Duration of the honey power-up effect in seconds. */
+#define HONEY_VELOCITY_MULTIPLIER 1.5f   /**< Speed multiplier when honey power-up is active.   */
 
 /**
  * @struct tHoney

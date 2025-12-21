@@ -84,8 +84,8 @@ static void GameLogic_PlaceFlower(tFlower *pFlower, const tFlower *pOtherFlower)
  * @param pGame Pointer to the game state structure.
  */
 static void GameLogic_SpawnPowerUp(tGame *pGame) {
-    // Low probability spawn check (0.2% per frame)
-    if(Utils_GenerateRandomU32() % 1000 >= 2) {
+    // Spawn rate per frame is 0.5%
+    if(Utils_GenerateRandomU32() % 1000 >= 5) {
         return;
     }
 
@@ -146,7 +146,19 @@ static void GameLogic_ResetPowerUps(tGame *pGame) {
  * @return Velocity multiplier (1.0 for normal speed, higher for honey boost).
  */
 static float GameLogic_GetVelocityMultiplier(const tGame *pGame) {
-    return pGame->mHoney.mIsActive ? HONEY_MULTIPLIER : 1.0f;
+    float multiplier = 1.0f;
+
+    // Honey boost (150% speed)
+    if(pGame->mHoney.mIsActive) {
+        multiplier *= HONEY_VELOCITY_MULTIPLIER;
+    }
+
+    // Slowdown effect (50% speed)
+    if(pGame->mSlowdownTimeLeftSec > 0.0f) {
+        multiplier *= RAINDROP_VELOCITY_MULTIPLIER;
+    }
+
+    return multiplier;
 } // GameLogic_GetVelocityMultiplier()
 
 /**
@@ -175,7 +187,190 @@ static void GameLogic_UpdatePowerUpTimers(tGame *pGame, const float deltaTime) {
             pGame->mHoney.mTimeLeft = 0.0f;
         }
     }
+
+    // Update slowdown timer
+    if(pGame->mSlowdownTimeLeftSec > 0.0f) {
+        pGame->mSlowdownTimeLeftSec -= deltaTime;
+        if(pGame->mSlowdownTimeLeftSec < 0.0f) {
+            pGame->mSlowdownTimeLeftSec = 0.0f;
+        }
+    }
 } // GameLogic_UpdatePowerUpTimers()
+
+/**
+ * @brief Spawn spiders at random valid positions on the screen.
+ * @details Attempts to place 2-4 spiders ensuring they do not overlap
+ *          with the source flower, target flower, or bee.
+ *
+ * @param pGame Pointer to the game state structure.
+ */
+static void GameLogic_SpawnSpiders(tGame *pGame) {
+    // Determine random number of spiders to spawn
+    const int targetSpiders = Utils_GetRandomInRange(2, 4);
+    int spawned = 0;
+
+    // Attempt to spawn spiders
+    for(int iSpider = 0; iSpider < MAX_SPIDERS && spawned < targetSpiders; iSpider++) {
+        // Only spawn in inactive slots
+        if(!pGame->mSpiders[iSpider].mIsActive) {
+            bool validPosition = false;
+
+            // Try multiple random placements
+            for(int iAttempt = 0; iAttempt < GAME_LOGIC_PLACEMENT_ATTEMPTS; iAttempt++) {
+                const float candidateX = (float)Utils_GetRandomInRange(10, SSD1306_WIDTH - 10);
+                const float candidateY = (float)Utils_GetRandomInRange(20, SSD1306_HEIGHT - 10);
+
+                // Check distance from source flower
+                const float sourcelowerDistanceSquared = Utils_DistanceSquareFloat(candidateX, candidateY,
+                                                                                   (float)pGame->mSourceFlower.mPosX,
+                                                                                   (float)pGame->mSourceFlower.mPosY);
+
+                // Check distance from target flower
+                const float targetFlowerDistanceSquared = Utils_DistanceSquareFloat(candidateX, candidateY,
+                                                                                    (float)pGame->mTargetFlower.mPosX,
+                                                                                    (float)pGame->mTargetFlower.mPosY);
+
+                // Check distance from bee
+                const float beeDistanceSquared = Utils_DistanceSquareFloat(candidateX, candidateY,
+                                                                           pGame->mBee.mPosX,
+                                                                           pGame->mBee.mPosY);
+
+                // Minimum distance constraints
+                const float minFlowerDistance = (FLOWER_RADIUS + SPIDER_RADIUS + 10);
+                const float minBeeDistance = 30.0f;
+
+                // Validate position
+                if(sourcelowerDistanceSquared > minFlowerDistance * minFlowerDistance &&
+                    targetFlowerDistanceSquared > minFlowerDistance * minFlowerDistance &&
+                    beeDistanceSquared > minBeeDistance * minBeeDistance) {
+                    // Valid position found
+                    pGame->mSpiders[iSpider].mPosX = candidateX;
+                    pGame->mSpiders[iSpider].mPosY = candidateY;
+                    pGame->mSpiders[iSpider].mIsActive = true;
+                    validPosition = true;
+
+                    spawned++; // another spider spawned
+                    break;
+                }
+            }// for
+
+            // Fallback if no valid position found
+            if(!validPosition) {
+                pGame->mSpiders[iSpider].mPosX = (float)(SSD1306_WIDTH) / 2;
+                pGame->mSpiders[iSpider].mPosY = (float)(SSD1306_HEIGHT) / 2;
+                pGame->mSpiders[iSpider].mIsActive = true;
+
+                spawned++; // another spider spawned
+            }
+        } // if
+    } // for
+} // GameLogic_SpawnSpiders()
+
+/**
+ * @brief Update the rain system by spawning and moving raindrops.
+ *
+ * @param pGame Pointer to the game state structure.
+ * @param deltaTime Time elapsed since last update in seconds.
+ */
+static void GameLogic_UpdateRain(tGame *pGame, const float deltaTime) {
+    // Spawn rate is 3% chance per frame
+    if(Utils_GenerateRandomU32() % 100 < 3) {
+        for(int iRainDrop = 0; iRainDrop < MAX_RAINDROPS; iRainDrop++) {
+            if(!pGame->mRainDrops[iRainDrop].mIsActive) {
+                pGame->mRainDrops[iRainDrop].mPosX = (float)Utils_GetRandomInRange(0, SSD1306_WIDTH);
+                pGame->mRainDrops[iRainDrop].mPosY = 10.0f;
+                pGame->mRainDrops[iRainDrop].mVelocityY = RAINDROP_FALL_SPEED;
+                pGame->mRainDrops[iRainDrop].mIsActive = true;
+                break;
+            }
+        }
+    }
+
+    // Update existing rain drops
+    for(int iRaindrop = 0; iRaindrop < MAX_RAINDROPS; iRaindrop++) {
+        if(pGame->mRainDrops[iRaindrop].mIsActive) {
+            pGame->mRainDrops[iRaindrop].mPosY += pGame->mRainDrops[iRaindrop].mVelocityY * deltaTime;
+
+            // Remove if off-screen
+            if(pGame->mRainDrops[iRaindrop].mPosY > SSD1306_HEIGHT) {
+                pGame->mRainDrops[iRaindrop].mIsActive = false;
+            }
+        }
+    }
+} // GameLogic_UpdateRain()
+
+/**
+ * @brief Check for collisions between the bee and other game entities.
+ * @details Detects collisions with spiders, raindrops, and power-ups,
+ *          applying effects such as game over, slowdown, or power-up activation.
+ *
+ * @param pGame Pointer to the game state structure.
+ */
+static void GameLogic_CheckCollisions(tGame *pGame) {
+    const float beeX = pGame->mBee.mPosX;
+    const float beeY = pGame->mBee.mPosY;
+
+    // Check spider collision
+    for(int iSpider = 0; iSpider < MAX_SPIDERS; iSpider++) {
+        if(pGame->mSpiders[iSpider].mIsActive) {
+            const float distanceSquare = Utils_DistanceSquareFloat(beeX, beeY,
+                                                                   pGame->mSpiders[iSpider].mPosX,
+                                                                   pGame->mSpiders[iSpider].mPosY);
+
+            const float collisionRadius = (float)(BEE_RADIUS + SPIDER_RADIUS);
+            if(distanceSquare < collisionRadius * collisionRadius) {
+                // Shield protects from death
+                if(pGame->mShield.mIsActive) {
+                    pGame->mShield.mIsActive = false;
+                    pGame->mShield.mTimeLeft = 0.0f;
+                    pGame->mSpiders[iSpider].mIsActive = false;
+                }
+                else {
+                    pGame->mState = STATE_GAMEOVER;
+                    return;
+                }
+            }
+        }
+    }
+
+    // Check raindrop collision (slowdown)
+    for(int iRaindrop = 0; iRaindrop < MAX_RAINDROPS; iRaindrop++) {
+        if(pGame->mRainDrops[iRaindrop].mIsActive) {
+            const float distanceSquare = Utils_DistanceSquareFloat(beeX, beeY,
+                                                                   pGame->mRainDrops[iRaindrop].mPosX,
+                                                                   pGame->mRainDrops[iRaindrop].mPosY);
+
+            // Check collision
+            const float collisionRadius = (float)(BEE_RADIUS + RAINDROP_RADIUS);
+            if(distanceSquare < collisionRadius * collisionRadius) {
+                pGame->mSlowdownTimeLeftSec = 3.0f;
+                pGame->mRainDrops[iRaindrop].mIsActive = false;
+            }
+        }
+    }
+
+    // Check powerup collection
+    for(int iPowerUp = 0; iPowerUp < MAX_POWERUPS; iPowerUp++) {
+        if(pGame->mPowerUps[iPowerUp].mIsActive) {
+            const float dist = Utils_DistanceSquareFloat(beeX, beeY,
+                                                         pGame->mPowerUps[iPowerUp].mPosX,
+                                                         pGame->mPowerUps[iPowerUp].mPosY);
+
+            if(dist < (BEE_RADIUS + POWERUP_RADIUS) * (BEE_RADIUS + POWERUP_RADIUS)) {
+                if(pGame->mPowerUps[iPowerUp].mType == 0) {
+                    pGame->mShield.mIsActive = true;
+                    pGame->mShield.mTimeLeft = SHIELD_DURATION;
+                }
+                else {
+                    pGame->mHoney.mIsActive = true;
+                    pGame->mHoney.mTimeLeft = HONEY_DURATION;
+                }
+
+                pGame->mPowerUps[iPowerUp].mIsActive = false;
+            }
+        }
+    }
+} // GameLogic_CheckCollisions()
 
 void GameLogic_NewRound(tGame *pGame) {
     // Validate input pointer
@@ -186,6 +381,9 @@ void GameLogic_NewRound(tGame *pGame) {
     // Place flowers in non-overlapping positions
     GameLogic_PlaceFlower(&pGame->mSourceFlower, NULL);
     GameLogic_PlaceFlower(&pGame->mTargetFlower, &pGame->mSourceFlower);
+
+    // Reset slowdown effect
+    pGame->mSlowdownTimeLeftSec = 0.0f;
 
     // Reset bee pollen state
     pGame->mBee.mHasPollen = false;
@@ -214,9 +412,10 @@ void GameLogic_StartGame(tGame *pGame) {
         return;
     }
 
-    // Reset score and timer
+    // Reset score and timers
     pGame->mScore = 0;
     pGame->mTimeLeftSec = GAME_TIME_SEC;
+    pGame->mSlowdownTimeLeftSec = 0.0f;
 
     // Setup first round
     GameLogic_NewRound(pGame);
@@ -234,6 +433,24 @@ void GameLogic_StartGame(tGame *pGame) {
     // Transition to play state
     pGame->mState = STATE_PLAY;
 } // GameLogic_StartGame()
+
+void GameLogic_EndGame(tGame *pGame) {
+    // Validate input pointer
+    if(pGame == NULL) {
+        return;
+    }
+
+    // Reset all game entities
+    GameLogic_ResetObstacles(pGame);
+    GameLogic_ResetPowerUps(pGame);
+
+    // Reset bee state
+    pGame->mBee.mHasPollen = false;
+    pGame->mBee.mPollenFill = 0.0f;
+    pGame->mBee.mVelocityX = 0.0f;
+    pGame->mBee.mVelocityY = 0.0f;
+    pGame->mBeeFrame = 0;
+} // GameLogic_EndGame()
 
 void GameLogic_UpdatePlay(tGame *pGame, const float deltaTime, const float normalizedX, const float normalizedY) {
     if(pGame == NULL) {
@@ -329,111 +546,16 @@ void GameLogic_UpdatePlay(tGame *pGame, const float deltaTime, const float norma
     // Pollen delivery logic
     else {
         // Delivering pollen to target flower
-        const float distSquared = Utils_DistanceSquareFloat(beeX, beeY,
-                                                            (float)pGame->mSourceFlower.mPosX,
-                                                            (float)pGame->mTargetFlower.mPosY);
+        const float distanceSquared = Utils_DistanceSquareFloat(beeX, beeY,
+                                                                (float)pGame->mTargetFlower.mPosX,
+                                                                (float)pGame->mTargetFlower.mPosY);
 
         // Successful delivery
-        if(distSquared <= targetRadiusSquared) {
+        if(distanceSquared <= targetRadiusSquared) {
             pGame->mScore += 1;
             GameLogic_NewRound(pGame);
         }
     }
 } // GameLogic_UpdatePlay()
-
-void GameLogic_SpawnSpiders(tGame *pGame) {
-    for(int iSpider = 0; iSpider < MAX_SPIDERS; iSpider++) {
-        if(!pGame->mSpiders[iSpider].mIsActive) {
-            pGame->mSpiders[iSpider].mPosX = (float)Utils_GetRandomInRange(10, SSD1306_WIDTH - 10);
-            pGame->mSpiders[iSpider].mPosY = (float)Utils_GetRandomInRange(15, SSD1306_HEIGHT - 10);
-            pGame->mSpiders[iSpider].mIsActive = true;
-            break;
-        }
-    }
-} // GameLogic_SpawnSpiders()
-
-void GameLogic_UpdateRain(tGame *pGame, const float deltaTime) {
-    // Spawn rate is 5% chance per frame
-    if(Utils_GenerateRandomU32() % 100 < 5) {
-        for(int iRainDrop = 0; iRainDrop < MAX_RAINDROPS; iRainDrop++) {
-            if(!pGame->mRainDrops[iRainDrop].mIsActive) {
-                pGame->mRainDrops[iRainDrop].mPosX = (float)Utils_GetRandomInRange(0, SSD1306_WIDTH);
-                pGame->mRainDrops[iRainDrop].mPosY = 10.0f;
-                pGame->mRainDrops[iRainDrop].mVelocityY = RAINDROP_FALL_SPEED;
-                pGame->mRainDrops[iRainDrop].mIsActive = true;
-                break;
-            }
-        }
-    }
-
-    // Update existing rain drops
-    for(int iRaindrop = 0; iRaindrop < MAX_RAINDROPS; iRaindrop++) {
-        if(pGame->mRainDrops[iRaindrop].mIsActive) {
-            pGame->mRainDrops[iRaindrop].mPosY += pGame->mRainDrops[iRaindrop].mVelocityY * deltaTime;
-
-            // Remove if off-screen
-            if(pGame->mRainDrops[iRaindrop].mPosY > SSD1306_HEIGHT) {
-                pGame->mRainDrops[iRaindrop].mIsActive = false;
-            }
-        }
-    }
-}
-
-void GameLogic_CheckCollisions(tGame *pGame) {
-    const float beeX = pGame->mBee.mPosX;
-    const float beeY = pGame->mBee.mPosY;
-
-    // Check spider collision
-    if(!pGame->mShield.mIsActive) {
-        for(int iSpider = 0; iSpider < MAX_SPIDERS; iSpider++) {
-            if(pGame->mSpiders[iSpider].mIsActive) {
-                const float distanceSquare = Utils_DistanceSquareFloat(beeX, beeY,
-                                                                       pGame->mSpiders[iSpider].mPosX,
-                                                                       pGame->mSpiders[iSpider].mPosY);
-
-                if(distanceSquare < (BEE_RADIUS + SPIDER_RADIUS) * (BEE_RADIUS + SPIDER_RADIUS)) {
-                    pGame->mState = STATE_GAMEOVER;
-                    return;
-                }
-            }
-        }
-    }
-
-    // Check raindrop collision (slowdown)
-    for(int iRaindrop = 0; iRaindrop < MAX_RAINDROPS; iRaindrop++) {
-        if(pGame->mRainDrops[iRaindrop].mIsActive) {
-            const float distanceSquare = Utils_DistanceSquareFloat(beeX, beeY,
-                                                                   pGame->mRainDrops[iRaindrop].mPosX,
-                                                                   pGame->mRainDrops[iRaindrop].mPosY);
-
-            if(distanceSquare < 16.0f) {
-                pGame->mBee.mVelocityX *= RAINDROP_SLOWDOWN;
-                pGame->mBee.mVelocityY *= RAINDROP_SLOWDOWN;
-            }
-        }
-    }
-
-    // Check powerup collection
-    for(int iPowerUp = 0; iPowerUp < MAX_POWERUPS; iPowerUp++) {
-        if(pGame->mPowerUps[iPowerUp].mIsActive) {
-            const float dist = Utils_DistanceSquareFloat(beeX, beeY,
-                                                         pGame->mPowerUps[iPowerUp].mPosX,
-                                                         pGame->mPowerUps[iPowerUp].mPosY);
-
-            if(dist < (BEE_RADIUS + POWERUP_RADIUS) * (BEE_RADIUS + POWERUP_RADIUS)) {
-                if(pGame->mPowerUps[iPowerUp].mType == 0) {
-                    pGame->mShield.mIsActive = true;
-                    pGame->mShield.mTimeLeft = SHIELD_DURATION;
-                }
-                else {
-                    pGame->mHoney.mIsActive = true;
-                    pGame->mHoney.mTimeLeft = HONEY_DURATION;
-                }
-
-                pGame->mPowerUps[iPowerUp].mIsActive = false;
-            }
-        }
-    }
-} // GameLogic_CheckCollisions()
 
 /*** end of file GameLogic.c ***/

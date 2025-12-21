@@ -129,22 +129,24 @@ static void Renderer_DrawFlower(const tGraphics *pGraphics, const int centerX,
     // Draw flower outline circle
     Graphics_DrawCircle(pGraphics, centerX, centerY, FLOWER_RADIUS, false);
 
-    // Draw flower petals
-    Graphics_DrawEllipse(pGraphics, centerX - 5, centerY, 3, 1, true);
-    Graphics_DrawEllipse(pGraphics, centerX + 5, centerY, 3, 1, true);
-    Graphics_DrawEllipse(pGraphics, centerX, centerY - 5, 1, 3, true);
-    Graphics_DrawEllipse(pGraphics, centerX, centerY + 5, 1, 3, true);
+    // Petals
+    Graphics_DrawEllipse(pGraphics, centerX - 7, centerY, 4, 2, true);
+    Graphics_DrawEllipse(pGraphics, centerX + 7, centerY, 4, 2, true);
+    Graphics_DrawEllipse(pGraphics, centerX, centerY - 7, 2, 4, true);
+    Graphics_DrawEllipse(pGraphics, centerX, centerY + 7, 2, 4, true);
 
     // Draw center indicator (different for source and target)
     if(isTarget) {
-        // Target flower: filled center dot + horizontal line
+        // Target: filled circle + cross pattern (delivery point)
         Graphics_DrawCircle(pGraphics, centerX, centerY, 2, true);
-        Graphics_DrawLine(pGraphics, centerX - 4, centerY, centerX + 4, centerY);
+        Graphics_DrawLine(pGraphics, centerX - 3, centerY - 3, centerX + 3, centerY + 3);
+        Graphics_DrawLine(pGraphics, centerX - 3, centerY + 3, centerX + 3, centerY - 3);
     }
     else {
-        // Source flower: small center dot + vertical line
-        Graphics_DrawCircle(pGraphics, centerX, centerY, 1, true);
-        Graphics_DrawLine(pGraphics, centerX, centerY - 4, centerX, centerY + 4);
+        // Source: empty circle + plus sign (pollen collection)
+        Graphics_DrawCircle(pGraphics, centerX, centerY, 1, false);
+        Graphics_DrawLine(pGraphics, centerX - 2, centerY, centerX + 2, centerY);
+        Graphics_DrawLine(pGraphics, centerX, centerY - 2, centerX, centerY + 2);
     }
 } // Renderer_DrawFlower()
 
@@ -157,8 +159,11 @@ static void Renderer_DrawFlower(const tGraphics *pGraphics, const int centerX,
  * @param pGraphics Pointer to the graphics context used for drawing.
  * @param pBee Pointer to the bee state containing position.
  * @param frame Current animation frame counter.
+ * @param hasShield Indicates if the bee has shield power-up for shield effect.
+ * @param hasHoney Indicates if the bee has honey power-up for speed trail effect.
  */
-static void Renderer_DrawBee(const tGraphics *pGraphics, const tBee *pBee, const uint8_t frame) {
+static void Renderer_DrawBee(const tGraphics *pGraphics, const tBee *pBee,
+                             const uint8_t frame, const bool hasShield, const bool hasHoney) {
     // Validate input pointers
     if(pBee == NULL) {
         return;
@@ -168,20 +173,59 @@ static void Renderer_DrawBee(const tGraphics *pGraphics, const tBee *pBee, const
     const int x = Utils_LRoundFloatToInt(pBee->mPosX);
     const int y = Utils_LRoundFloatToInt(pBee->mPosY);
 
-    // Draw bee body (filled circle)
+    // Shield effect
+    if(hasShield) {
+        Graphics_DrawCircle(pGraphics, x, y, BEE_RADIUS + 3, false);
+    }
+
+    // Speed trail effect
+    if(hasHoney) {
+        // Trail animation (3 phases)
+        const int phase = frame % 6;
+
+        // Left wing trail
+        if(phase < 4) {
+            Graphics_SetPixel(pGraphics, x - 6, y - 3, true);
+            Graphics_SetPixel(pGraphics, x - 7, y - 3, true);
+            Graphics_SetPixel(pGraphics, x - 6, y - 2, true);
+        }
+        if(phase < 3) {
+            Graphics_SetPixel(pGraphics, x - 8, y - 3, true);
+            Graphics_SetPixel(pGraphics, x - 8, y - 2, true);
+        }
+        if(phase < 2) {
+            Graphics_SetPixel(pGraphics, x - 9, y - 3, true);
+        }
+
+        // Right wing trail
+        if(phase < 4) {
+            Graphics_SetPixel(pGraphics, x - 6, y + 2, true);
+            Graphics_SetPixel(pGraphics, x - 7, y + 2, true);
+            Graphics_SetPixel(pGraphics, x - 6, y + 3, true);
+        }
+        if(phase < 3) {
+            Graphics_SetPixel(pGraphics, x - 8, y + 2, true);
+            Graphics_SetPixel(pGraphics, x - 8, y + 3, true);
+        }
+        if(phase < 2) {
+            Graphics_SetPixel(pGraphics, x - 9, y + 2, true);
+        }
+    }
+
+    // Bee body (filled circle)
     Graphics_DrawCircle(pGraphics, x, y, BEE_RADIUS, true);
 
     // Animated wings (2-frame animation)
     if(frame % 2 == 0) {
         Graphics_DrawLine(pGraphics, x - 3, y - 2, x - 5, y - 4);
-        Graphics_DrawLine(pGraphics, x + 3, y - 2, x + 5, y - 4);
+        Graphics_DrawLine(pGraphics, x - 3, y + 2, x - 5, y + 4);
     }
     else {
         Graphics_DrawLine(pGraphics, x - 3, y - 1, x - 5, y - 2);
-        Graphics_DrawLine(pGraphics, x + 3, y - 1, x + 5, y - 2);
+        Graphics_DrawLine(pGraphics, x - 3, y + 1, x - 5, y + 2);
     }
 
-    // Draw stinger
+    // Stinger
     Graphics_DrawLine(pGraphics, x, y + BEE_RADIUS, x, y + BEE_RADIUS + 2);
 } // Renderer_DrawBee()
 
@@ -215,10 +259,10 @@ static void Renderer_DrawSpider(const tGraphics *pGraphics, const int x, const i
  */
 static void Renderer_DrawRainDrop(const tGraphics *pGraphics, const int x, const int y) {
     // Raindrop shape
-    Graphics_DrawEllipse(pGraphics, x, y + 2, 2, 3, true);
-    Graphics_DrawLine(pGraphics, x, y, x, y + 2);
-    Graphics_SetPixel(pGraphics, x - 1, y + 2, true);
-    Graphics_SetPixel(pGraphics, x + 1, y + 2, true);
+    Graphics_DrawEllipse(pGraphics, x, y + 4, 3, 4, true);
+    Graphics_DrawLine(pGraphics, x, y, x, y + 3);
+    Graphics_SetPixel(pGraphics, x - 1, y + 1, true);
+    Graphics_SetPixel(pGraphics, x + 1, y + 1, true);
 } // Renderer_DrawRainDrop()
 
 /**
@@ -236,14 +280,21 @@ static void Renderer_DrawPowerUp(const tGraphics *pGraphics, const int x,
                                  const int y, const ePowerUpType type) {
     // Draw shield
     if(type == SHIELD) {
-        Graphics_DrawCircle(pGraphics, x, y, POWERUP_RADIUS, false);
-        Graphics_DrawLine(pGraphics, x - 2, y, x + 2, y);
+        Graphics_DrawLine(pGraphics, x - 3, y - 3, x + 3, y - 3);
+        Graphics_DrawLine(pGraphics, x - 3, y - 3, x - 4, y);
+        Graphics_DrawLine(pGraphics, x + 3, y - 3, x + 4, y);
+        Graphics_DrawLine(pGraphics, x - 4, y, x - 3, y + 2);
+        Graphics_DrawLine(pGraphics, x + 4, y, x + 3, y + 2);
+        Graphics_DrawLine(pGraphics, x - 3, y + 2, x, y + 4);
+        Graphics_DrawLine(pGraphics, x + 3, y + 2, x, y + 4);
+        Graphics_DrawCircle(pGraphics, x, y - 1, 2, false);
     }
     //Draw honey
     else if(type == HONEY) {
-        Graphics_DrawCircle(pGraphics, x, y, POWERUP_RADIUS - 1, true);
-        Graphics_SetPixel(pGraphics, x - 3, y, true);
-        Graphics_SetPixel(pGraphics, x + 3, y, true);
+        Graphics_DrawRectangle(pGraphics, x - 3, y - 2, 6, 5, false);
+        Graphics_DrawRectangle(pGraphics, x - 3, y + 1, 6, 2, true);
+        Graphics_DrawLine(pGraphics, x - 2, y - 3, x + 2, y - 3);
+        Graphics_DrawLine(pGraphics, x - 1, y - 4, x + 1, y - 4);
     }
 } // Renderer_DrawPowerUp()
 
@@ -256,17 +307,40 @@ static void Renderer_DrawPowerUp(const tGraphics *pGraphics, const int x,
  * @param pGraphics Pointer to the graphics context used for drawing.
  */
 static void Renderer_DrawActivePowerUps(const tGame *pGame, const tGraphics *pGraphics) {
-    int offsetX = 0;
+    int yOffset = 52;
+    char buffer[16];
+    int result;
 
     // Draw shield indicator if active
     if(pGame->mShield.mIsActive) {
-        Graphics_DrawCircle(pGraphics, 6 + offsetX, 52, 3, false);
-        offsetX += 10;
+        // Shield icon
+        Graphics_DrawLine(pGraphics, 3, 49, 9, 49);
+        Graphics_DrawLine(pGraphics, 3, 49, 2, 52);
+        Graphics_DrawLine(pGraphics, 9, 49, 10, 52);
+        Graphics_DrawLine(pGraphics, 2, 52, 3, 54);
+        Graphics_DrawLine(pGraphics, 10, 52, 9, 54);
+        Graphics_DrawLine(pGraphics, 3, 54, 6, 56);
+        Graphics_DrawLine(pGraphics, 9, 54, 6, 56);
+
+        // Timer
+        result = snprintf(buffer, sizeof(buffer), "%d", (int)(pGame->mShield.mTimeLeft + 0.5f));
+        if(result > 0 && (size_t)result < sizeof(buffer)) {
+            Graphics_DrawText(pGraphics, 12, yOffset, buffer);
+        }
+        yOffset += 9;
     }
 
     // Draw honey boost indicator if active
     if(pGame->mHoney.mIsActive) {
-        Graphics_DrawCircle(pGraphics, 6 + offsetX, 52, 2, true);
+        // Honey jar icon
+        Graphics_DrawRectangle(pGraphics, 3, yOffset - 2, 6, 5, false);
+        Graphics_DrawRectangle(pGraphics, 3, yOffset + 1, 6, 2, true);
+
+        // Timer
+        result = snprintf(buffer, sizeof(buffer), "%d", (int)(pGame->mHoney.mTimeLeft + 0.5f));
+        if(result > 0 && (size_t)result < sizeof(buffer)) {
+            Graphics_DrawText(pGraphics, 12, yOffset, buffer);
+        }
     }
 } // Renderer_DrawActivePowerUps()
 
@@ -329,11 +403,11 @@ void Renderer_Draw(const tGame *pGame, const tGraphics *pGraphics) {
     Graphics_Clear(pGraphics);
 
     // Render splash screen
-    if(pGame->mState == STATE_SPLASH) {
+    if(pGame->mState == STATE_HOME) {
         Graphics_DrawText(pGraphics, 12, 14, "BEE POLLINATION");
         Graphics_DrawText(pGraphics, 12, 28, "Joystick: move");
-        Graphics_DrawText(pGraphics, 12, 38, "Joystick button: start/pause");
-        Graphics_DrawText(pGraphics, 12, 52, "Press joystick button to start...");
+        Graphics_DrawText(pGraphics, 12, 38, "SW: start/pause");
+        Graphics_DrawText(pGraphics, 12, 52, "Press SW to start...");
         return;
     }
 
@@ -353,34 +427,11 @@ void Renderer_Draw(const tGame *pGame, const tGraphics *pGraphics) {
     Renderer_DrawSpiders(pGame, pGraphics);
     Renderer_DrawRainDrops(pGame, pGraphics);
     Renderer_DrawPowerUps(pGame, pGraphics);
-    Renderer_DrawBee(pGraphics, &pGame->mBee, pGame->mBeeFrame);
+    Renderer_DrawBee(pGraphics, &pGame->mBee, pGame->mBeeFrame,
+                     pGame->mShield.mIsActive, pGame->mHoney.mIsActive);
 
     // Draw active power-up indicators
     Renderer_DrawActivePowerUps(pGame, pGraphics);
-
-    // Render pause overlay
-    if(pGame->mState == STATE_PAUSE) {
-        Graphics_DrawRectangle(pGraphics, 20, 22, 88, 20, 0);
-        Graphics_DrawText(pGraphics, 42, 28, "PAUSED");
-        Graphics_DrawText(pGraphics, 28, 40, "Press joystick...");
-    }
-    // Render game over overlay
-    else if(pGame->mState == STATE_GAMEOVER) {
-        Graphics_DrawRectangle(pGraphics, 14, 18, 100, 30, 0);
-        Graphics_DrawText(pGraphics, 26, 24, "GAME OVER");
-
-        char scoreBuffer[24];
-        const int result = snprintf(scoreBuffer, sizeof(scoreBuffer), "Score: %d", pGame->mScore);
-        if(result < 0) {
-            scoreBuffer[0] = '\0';
-        }
-        else if((size_t)result >= sizeof(scoreBuffer)) {
-            scoreBuffer[sizeof(scoreBuffer) - 1] = '\0';
-        }
-
-        Graphics_DrawText(pGraphics, 26, 34, scoreBuffer);
-        Graphics_DrawText(pGraphics, 18, 52, "Press joystick to retry");
-    }
 } // Renderer_Draw()
 
 /*** end of file Renderer.c ***/

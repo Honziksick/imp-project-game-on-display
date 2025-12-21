@@ -9,7 +9,7 @@
  * Author:       Jan Kalina <xkalinj00>                                        *
  *                                                                             *
  * Created:      15.12.2025                                                    *
- * Last edit:    19.12.2025                                                    *
+ * Last edit:    20.12.2025                                                    *
  *                                                                             *
  * Description:  Defines the eGameState enumeration representing the major     *
  *               runtime states of the game. Intended for use by the main      *
@@ -34,11 +34,11 @@
  *          allowing different subsystems to adjust their behavior accordingly.
  */
 typedef enum {
-	STATE_SPLASH = 0,       /**< Title screen / instructions */
-	STATE_CALIB,            /**< Joystick calibration        */
-	STATE_PLAY,             /**< Active gameplay             */
-	STATE_PAUSE,            /**< Paused state                */
-	STATE_GAMEOVER          /**< Game over screen            */
+    STATE_HOME = 0,         /**< Title screen / instructions */
+    STATE_CALIB,            /**< Joystick calibration        */
+    STATE_PLAY,             /**< Active gameplay             */
+    STATE_PAUSE,            /**< Paused state                */
+    STATE_GAMEOVER          /**< Game over screen            */
 } eGameState;
 
 #endif // E_GAME_STATE_H

@@ -9,7 +9,7 @@
  * Author:       Jan Kalina <xkalinj00>                                        *
  *                                                                             *
  * Created:      15.12.2025                                                    *
- * Last edit:    19.12.2025                                                    *
+ * Last edit:    20.12.2025                                                    *
  *                                                                             *
  * Description:  Defines the tGame structure which aggregates the complete     *
  *               runtime state of the application. The structure contains      *
@@ -64,6 +64,7 @@ typedef struct {
     tHoney mHoney;                          /**< Honey (speed boost) power-up.         */
     int mScore;                             /**< Player score (successful deliveries). */
     float mTimeLeftSec;                     /**< Remaining game time (seconds).        */
+    float mSlowdownTimeLeftSec;             /**< Remaining slowdown effect time (s).   */
     tJoystick mJoystick;                    /**< Calibrated & filtered joystick.       */
     tButton mButton;                        /**< Debounced button state.               */
 } tGame;

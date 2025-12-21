@@ -9,7 +9,7 @@
  * Author:       Jan Kalina <xkalinj00>                                        *
  *                                                                             *
  * Created:      15.12.2025                                                    *
- * Last edit:    19.12.2025                                                    *
+ * Last edit:    20.12.2025                                                    *
  *                                                                             *
  * Description:  Implements the application's entry point and main loop.       *
  *               Responsible for hardware and peripheral initialization        *
@@ -81,7 +81,7 @@ void app_main() {
 
     // Initialize game state
     tGame game = {0};
-    game.mState = STATE_SPLASH;
+    game.mState = STATE_HOME;
     game.mButton.mIsRawState = false;
     game.mButton.mIsDebouncedState = false;
     game.mButton.mStateChangedTimestampMs = esp_timer_get_time();
@@ -125,7 +125,7 @@ void app_main() {
 
         // Update button state and detect press edge
         Button_IsDebouncedState(&game);
-        const bool buttonPressed = Button_IsRisingEdge(&game, &buttonEdgePreviousState);
+        bool buttonPressed = Button_IsRisingEdge(&game, &buttonEdgePreviousState);
 
         // Joystick input variables
         float normalizedX = 0.0f;
@@ -133,13 +133,23 @@ void app_main() {
 
         // FSM
         switch(game.mState) {
-            case STATE_SPLASH: {
+            case STATE_HOME: {
                 if(buttonPressed) {
+                    // Transition to calibration state
                     game.mState = STATE_CALIB;
+                    memset(gFrameBuffer, 0, FRAMEBUFFER_SIZE);
                     Renderer_Draw(&game, &gGraphicsContext);
                     SSD1306_SendFrameBuffer(&gDisplay, gFrameBuffer, FRAMEBUFFER_SIZE);
+                    vTaskDelay(pdMS_TO_TICKS(100));
+
+                    // Calibrate joystick and start game
                     Joystick_Calibrate(&game);
                     GameLogic_StartGame(&game);
+
+                    // Initial render after calibration
+                    memset(gFrameBuffer, 0, FRAMEBUFFER_SIZE);
+                    Renderer_Draw(&game, &gGraphicsContext);
+                    SSD1306_SendFrameBuffer(&gDisplay, gFrameBuffer, FRAMEBUFFER_SIZE);
                 }
                 break;
             }
@@ -147,42 +157,60 @@ void app_main() {
                 Joystick_Read(&game, &normalizedX, &normalizedY);
                 if(buttonPressed) {
                     game.mState = STATE_PAUSE;
+                    memset(gFrameBuffer, 0, FRAMEBUFFER_SIZE);
+                    Graphics_DrawPausedScreen(&gGraphicsContext);
+                    SSD1306_SendFrameBuffer(&gDisplay, gFrameBuffer, FRAMEBUFFER_SIZE);
+                    break;
                 }
                 GameLogic_UpdatePlay(&game, deltaTime, normalizedX, normalizedY);
                 break;
             }
             case STATE_GAMEOVER: {
-                if(buttonPressed) {
-                    game.mState = STATE_CALIB;
-                    Renderer_Draw(&game, &gGraphicsContext);
-                    SSD1306_SendFrameBuffer(&gDisplay, gFrameBuffer, FRAMEBUFFER_SIZE);
-                    Joystick_Calibrate(&game);
-                    GameLogic_StartGame(&game);
+                // Render game over screen immediately
+                memset(gFrameBuffer, 0, FRAMEBUFFER_SIZE);
+                Graphics_DrawGameOverScreen(&gGraphicsContext, game.mScore);
+                SSD1306_SendFrameBuffer(&gDisplay, gFrameBuffer, FRAMEBUFFER_SIZE);
+
+                // Wait for button press
+                while(!buttonPressed) {
+                    Button_IsDebouncedState(&game);
+                    buttonPressed = Button_IsRisingEdge(&game, &buttonEdgePreviousState);
+                    vTaskDelay(pdMS_TO_TICKS(33));
                 }
+
+                game.mState = STATE_HOME;
                 break;
             }
             case STATE_CALIB: {
-                Joystick_Calibrate(&game);
-                GameLogic_StartGame(&game);
+                // Should not reach here, as calibration is handled immediately after state change
                 break;
             }
-            case STATE_PAUSE:
-            default: {
+            case STATE_PAUSE: {
                 Joystick_Read(&game, &normalizedX, &normalizedY);
                 if(buttonPressed) {
                     game.mState = STATE_PLAY;
+
+                    // Render game state immediately when resuming
+                    memset(gFrameBuffer, 0, FRAMEBUFFER_SIZE);
+                    Renderer_Draw(&game, &gGraphicsContext);
+                    SSD1306_SendFrameBuffer(&gDisplay, gFrameBuffer, FRAMEBUFFER_SIZE);
                 }
                 break;
             }
+            default: // unknown state
+                break;
         } // switch(game.mState)
 
         // Render current frame
-        Renderer_Draw(&game, &gGraphicsContext);
-        SSD1306_SendFrameBuffer(&gDisplay, gFrameBuffer, FRAMEBUFFER_SIZE);
+        if(game.mState == STATE_PLAY || game.mState == STATE_HOME) {
+            memset(gFrameBuffer, 0, FRAMEBUFFER_SIZE);
+            Renderer_Draw(&game, &gGraphicsContext);
+            SSD1306_SendFrameBuffer(&gDisplay, gFrameBuffer, FRAMEBUFFER_SIZE);
+        }
 
         // Frame rate limiting (~30 FPS)
         vTaskDelay(pdMS_TO_TICKS(33));
-    }
+    } // switch()
 } // app_main()
 
 /*** end of file main.c ***/

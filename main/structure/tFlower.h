@@ -9,7 +9,7 @@
  * Author:       Jan Kalina <xkalinj00>                                        *
  *                                                                             *
  * Created:      15.12.2025                                                    *
- * Last edit:    19.12.2025                                                    *
+ * Last edit:    20.12.2025                                                    *
  *                                                                             *
  * Description:  Defines the tFlower structure holding the flower's center     *
  *               coordinates in pixel space. Stores integer X and Y positions  *
@@ -28,7 +28,7 @@
 #ifndef T_FLOWER_H
 #define T_FLOWER_H
 
-#define FLOWER_RADIUS 7   /**< Flower sprite radius (pixels). */
+#define FLOWER_RADIUS 5   /**< Flower sprite radius (pixels). */
 
 /**
  * @struct tFlower

@@ -29,9 +29,10 @@
 
 #include <stdbool.h>  // bool
 
-#define MAX_RAINDROPS       50          /**< Maximum number of raindrops in the game.     */
-#define RAINDROP_FALL_SPEED 30.0f       /**< Fall speed of a raindrop (units per second). */
-#define RAINDROP_SLOWDOWN   0.5f        /**< Slowdown factor when raindrop hits the bee.  */
+#define MAX_RAINDROPS       50               /**< Maximum number of raindrops in the game.      */
+#define RAINDROP_RADIUS     2                /**< Radius of a raindrop for collision detection. */
+#define RAINDROP_FALL_SPEED 30.0f            /**< Fall speed of a raindrop (units per second).  */
+#define RAINDROP_VELOCITY_MULTIPLIER 0.5f    /**< Slowdown factor when raindrop hits the bee.   */
 
 /**
  * @struct tRainDrop

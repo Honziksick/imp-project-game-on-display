@@ -9,7 +9,7 @@
  * Author:       Jan Kalina <xkalinj00>                                        *
  *                                                                             *
  * Created:      15.12.2025                                                    *
- * Last edit:    19.12.2025                                                    *
+ * Last edit:    20.12.2025                                                    *
  *                                                                             *
  * Description:  Public API for core game logic controlling gameplay flow,     *
  *               round initialization, and state updates. Provides functions   *
@@ -49,6 +49,14 @@ void GameLogic_NewRound(tGame *pGame);
 void GameLogic_StartGame(tGame *pGame);
 
 /**
+ * @brief Ends the current game session.
+ * @details Finalizes game parameters and prepares for game over state.
+ *
+ * @param pGame Pointer to the game structure.
+ */
+void GameLogic_EndGame(tGame *pGame);
+
+/**
  * @brief Updates the game state during play.
  * @details Updates game parameters based on elapsed time and player input.
  *
@@ -58,12 +66,6 @@ void GameLogic_StartGame(tGame *pGame);
  * @param normalizedY Normalized Y coordinate of player input (range: -1.0 to 1.0).
  */
 void GameLogic_UpdatePlay(tGame *pGame, float deltaTime, float normalizedX, float normalizedY);
-
-void GameLogic_SpawnSpiders(tGame *pGame);
-
-void GameLogic_UpdateRain(tGame *pGame, float deltaTime);
-
-void GameLogic_CheckCollisions(tGame *pGame);
 
 #endif // GAME_LOGIC_H
 

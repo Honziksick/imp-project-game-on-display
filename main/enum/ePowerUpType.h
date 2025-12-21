@@ -30,9 +30,8 @@
  * @brief Enumeration of power-up types available in the game.
  */
 typedef enum {
-	NONE = 0,       /**< No power-up.     */
-	SHIELD,         /**< Shield power-up. */
-	HONEY           /**< Honey power-up.  */
+    SHIELD = 0,     /**< Shield power-up. */
+    HONEY           /**< Honey power-up.  */
 } ePowerUpType;
 
 #endif // E_POWER_UP_TYPE_H

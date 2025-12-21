@@ -132,7 +132,8 @@ void Graphics_DrawCircle(const tGraphics *pGraphics, int centerX, int centerY, i
  * @param radiusY The vertical radius of the ellipse in pixels.
  * @param fill True for a filled ellipse, false for an outline only.
  */
-void Graphics_DrawEllipse(const tGraphics *pGraphics, int centerX, int centerY, int radiusX, int radiusY, bool fill);
+void Graphics_DrawEllipse(const tGraphics *pGraphics, int centerX, int centerY,
+                          int radiusX, int radiusY, bool fill);
 
 /**
  * @brief Draws a text string at the specified position.
@@ -147,6 +148,25 @@ void Graphics_DrawEllipse(const tGraphics *pGraphics, int centerX, int centerY, 
  * @param text Pointer to the null-terminated string to draw.
  */
 void Graphics_DrawText(const tGraphics *pGraphics, int x, int y, const char text[]);
+
+/**
+ * @brief Draws the paused screen overlay.
+ * @details This function renders a "PAUSED" message centered on the display.
+ *          "PAUSED" is drawn inside a rectangle box.
+ *
+ * @param pGraphics Pointer to the graphics context used for drawing.
+ */
+void Graphics_DrawPausedScreen(const tGraphics *pGraphics);
+
+/**
+ * @brief Draws the game over screen with the final score.
+ * @details This function renders a "GAME OVER" message along with the player's
+ *          final score, centered on the display.
+ *
+ * @param pGraphics Pointer to the graphics context used for drawing.
+ * @param score The final score to display.
+ */
+void Graphics_DrawGameOverScreen(const tGraphics *pGraphics, int score);
 
 #endif // GRAPHICS_H
 

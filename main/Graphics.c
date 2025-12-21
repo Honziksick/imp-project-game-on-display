@@ -45,11 +45,6 @@
  * @param ch The character to be drawn.
  */
 static void Graphics_DrawChar(const tGraphics *pGraphics, const int x, const int y, unsigned char ch) {
-    // Validate input pointers
-    if(pGraphics == NULL || pGraphics->mFrameBufferPtr == NULL) {
-        return;
-    }
-
     // Map unsupported characters to '?'
     if(ch < FONT5X7_FIRST_ASCII || ch > FONT5X7_LAST_ASCII) {
         ch = '?';
@@ -356,5 +351,42 @@ void Graphics_DrawText(const tGraphics *pGraphics, const int x, int y, const cha
         cursorX += 6;
     }
 } // Graphics_DrawText()
+
+void Graphics_DrawPausedScreen(const tGraphics *pGraphics) {
+    // Validate input parameters
+    if(pGraphics == NULL) {
+        return;
+    }
+
+    // Draw pause screen
+    Graphics_DrawRectangle(pGraphics, 32, 24, 64, 14, false);
+    Graphics_DrawText(pGraphics, 42, 28, "PAUSED");
+    Graphics_DrawText(pGraphics, 17, 44, "Press joystick...");
+} // Graphics_DrawPausedScreen()
+
+void Graphics_DrawGameOverScreen(const tGraphics *pGraphics, const int score) {
+    // Validate input parameters
+    if(pGraphics == NULL) {
+        return;
+    }
+
+    // Draw game over box
+    Graphics_DrawRectangle(pGraphics, 14, 18, 100, 30, false);
+    Graphics_DrawText(pGraphics, 26, 24, "GAME OVER");
+
+    // Prepare score text
+    char scoreBuffer[24];
+    const int result = snprintf(scoreBuffer, sizeof(scoreBuffer), "Score: %d", score);
+    if(result < 0) {
+        scoreBuffer[0] = '\0';
+    }
+    else if((size_t)result >= sizeof(scoreBuffer)) {
+        scoreBuffer[sizeof(scoreBuffer) - 1] = '\0';
+    }
+
+    // Draw score and exit prompt
+    Graphics_DrawText(pGraphics, 26, 34, scoreBuffer);
+    Graphics_DrawText(pGraphics, 9, 52, "Press SW to exit...");
+} // Graphics_DrawGameOverScreen()
 
 /*** end of file Graphics.c ***/
